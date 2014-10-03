@@ -41,7 +41,9 @@ TARGET_SOURCES := localstore.cpp \
                   call_list_store_processor.cpp \
                   mementoappserver.cpp \
                   base64.cpp \
-                  unique.cpp
+                  unique.cpp \
+                  alarm.cpp \
+                  communicationmonitor.cpp
 
 TARGET_SOURCES_BUILD := main.cpp
 
