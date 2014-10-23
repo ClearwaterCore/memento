@@ -45,7 +45,8 @@ HomesteadConnection::HomesteadConnection(const std::string& server,
   _http(new HttpConnection(server,
                            false,
                            resolver,
-                           SASEvent::HttpLogLevel::PROTOCOL))
+                           SASEvent::HttpLogLevel::PROTOCOL,
+                           NULL))
 {
 }
 
