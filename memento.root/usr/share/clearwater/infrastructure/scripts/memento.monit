@@ -38,9 +38,6 @@
 
 # Set up the monit configuration for memento with the right IP addresses and ports
 cat > /etc/monit/conf.d/memento.monit <<EOF
-# Poll every 10 seconds
-set daemon 10
-
 # Check the server's public interfaces.  We put this first so that we process
 # failed polls (and maybe kill the server) before we process the restart.
 check program poll_memento with path "/usr/share/clearwater/bin/poll_memento.sh"
@@ -54,4 +51,4 @@ EOF
 chmod 0644 /etc/monit/conf.d/memento.monit
 
 # Force monit to reload its configuration
-service monit reload
+reload clearwater-monit || true
