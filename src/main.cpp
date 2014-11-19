@@ -364,7 +364,10 @@ int main(int argc, char**argv)
   seed = time(NULL) ^ getpid();
   srand(seed);
 
-  MemcachedStore* m_store = new MemcachedStore(false, "./cluster_settings");
+  MemcachedStore* m_store = new MemcachedStore(false, 
+                                               "./cluster_settings",
+                                               NULL,
+                                               NULL);
   AuthStore* auth_store = new AuthStore(m_store, options.digest_timeout);
 
   LoadMonitor* load_monitor = new LoadMonitor(100000, // Initial target latency (us)
