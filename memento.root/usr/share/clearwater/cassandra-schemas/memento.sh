@@ -112,8 +112,10 @@ if [ "$snitch" == "PropertyFileSnitch" ]; then
 
     rm -f /tmp/$$.cqlsh.in
 else
-    printf "ALTER KEYSPACE ${keyspace} WITH strategy_class = 'SimpleStrategy' AND strategy_options:replication_factor = $num_replicas;" > /tmp/$$.cqlsh.in
-    $namespace_prefix cqlsh -2 < /tmp/$$.cqlsh.in
+    printf "
+ALTER KEYSPACE \"${keyspace}\" WITH REPLICATION =
+  { 'class' : 'SimpleStrategy', 'replication_factor' : $num_replicas };" > /tmp/$$.cqlsh.in
+    $namespace_prefix cqlsh -3 < /tmp/$$.cqlsh.in
 
     rm -f /tmp/$$.cqlsh.in
 fi
