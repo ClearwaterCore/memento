@@ -22,9 +22,6 @@
 [submodule "modules/libmemcached"]
 	path = modules/libmemcached
 	url = git@github.com:ClearwaterCore/libmemcached-upstream.git
-[submodule "modules/libevent"]
-	path = modules/libevent
-	url = git@github.com:libevent/libevent.git
 [submodule "build-infra"]
 	path = build-infra
 	url = git@github.com:ClearwaterCore/clearwater-build-infra.git
