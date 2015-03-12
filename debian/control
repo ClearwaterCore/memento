@@ -11,7 +11,7 @@ Homepage: http://projectclearwater.org/
 
 Package: memento
 Architecture: any
-Depends: clearwater-infrastructure, clearwater-tcp-scalability, clearwater-log-cleanup, memento-libs, libzmq3, clearwater-memcached
+Depends: clearwater-infrastructure, clearwater-tcp-scalability, clearwater-log-cleanup, memento-libs, libzmq3, clearwater-memcached, astaire
 Suggests: memento-dbg
 Description: memento
 
