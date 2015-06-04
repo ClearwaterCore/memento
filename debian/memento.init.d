@@ -154,7 +154,8 @@ do_start()
                      $exception_max_ttl_arg
                      --log-file $log_directory
                      --log-level $log_level
-                     --sas $sas_server,$NAME@$public_hostname"
+                     --sas $sas_server,$NAME@$public_hostname
+                     --memcached-write-format=binary"
         [ "$http_blacklist_duration" = "" ] || DAEMON_ARGS="$DAEMON_ARGS --http-blacklist-duration=$http_blacklist_duration"
 
         $namespace_prefix start-stop-daemon --start --quiet --background --make-pidfile --pidfile $PIDFILE --exec $DAEMON --chuid $NAME --chdir $HOME -- $DAEMON_ARGS \
