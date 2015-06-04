@@ -143,7 +143,8 @@ LDFLAGS += -lzmq \
            -lboost_regex \
            -lboost_date_time \
            -lthrift \
-           -lcassandra
+           -lcassandra \
+           -lz
 
 LDFLAGS += $(shell PKG_CONFIG_PATH=${ROOT}/usr/lib/pkgconfig pkg-config --libs libpjproject)
 
