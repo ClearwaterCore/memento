@@ -138,6 +138,7 @@ LDFLAGS += -lzmq \
            -lmemcached \
            -levent \
            -lsas \
+           -lz \
            -lcurl \
            -lpthread \
            -lcares \
