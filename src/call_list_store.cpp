@@ -268,7 +268,8 @@ bool GetCallFragments::perform(CassandraStore::ClientInterface* client,
                              COLUMN_FAMILY,
                              _impu,
                              CALL_COLUMN_PREFIX,
-                             columns);
+                             columns,
+                             trail);
 
   for(std::vector<cass::ColumnOrSuperColumn>::const_iterator column_it = columns.begin();
       column_it != columns.end();
