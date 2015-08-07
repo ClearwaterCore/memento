@@ -266,7 +266,8 @@ bool GetCallFragments::perform(CassandraStore::Client* client,
   client->ha_get_columns_with_prefix(COLUMN_FAMILY,
                                      _impu,
                                      CALL_COLUMN_PREFIX,
-                                     columns);
+                                     columns,
+                                     trail);
 
   for(std::vector<cass::ColumnOrSuperColumn>::const_iterator column_it = columns.begin();
       column_it != columns.end();
