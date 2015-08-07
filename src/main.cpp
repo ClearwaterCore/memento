@@ -134,7 +134,7 @@ const static struct option long_opt[] =
   {"init-token-rate",          required_argument, NULL, INIT_TOKEN_RATE},
   {"min-token-rate",           required_argument, NULL, MIN_TOKEN_RATE},
   {"exception-max-ttl",        required_argument, NULL, EXCEPTION_MAX_TTL},
-  { "http-blacklist-duration", required_argument, NULL, HTTP_BLACKLIST_DURATION},
+  {"http-blacklist-duration",  required_argument, NULL, HTTP_BLACKLIST_DURATION},
   {NULL,                       0,                 NULL, 0},
 };
 
@@ -445,6 +445,7 @@ int main(int argc, char**argv)
   options.init_token_rate = 100.0;
   options.min_token_rate = 10.0;
   options.exception_max_ttl = 600;
+  options.http_blacklist_duration = HttpResolver::DEFAULT_BLACKLIST_DURATION;
 
   if (init_logging_options(argc, argv, options) != 0)
   {
