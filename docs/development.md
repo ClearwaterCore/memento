@@ -2,7 +2,7 @@
 
 This document describes how to build and test Memento.
 
-Memento development is ongoing on Ubuntu 12.04, so the processes described
+Memento development is ongoing on Ubuntu 14.04, so the processes described
 below are targetted for (and tested on) this platform.  The code has been
 written to be portable, though, and should compile on other platforms once the
 required dependencies are installed.
@@ -22,7 +22,7 @@ Dependencies
 Memento depends on a number of tools and libraries.  Some of these are
 included as git submodules, but the rest must be installed separately.
 
-On Ubuntu 12.04,
+On Ubuntu 14.04,
 
 1.  update the package list
 
@@ -30,7 +30,7 @@ On Ubuntu 12.04,
 
 2.  install the required packages
 
-        sudo apt-get install libboost-all-dev make cmake flex bison libtool libcloog-ppl0 git gcc g++ bison flex libxml2-utils autoconf libevent-dev  libzmq3-dev pkg-config libcurl4-openssl-dev valgrind
+        sudo apt-get install libboost-all-dev make cmake flex bison libtool libcloog-ppl1 git gcc g++ bison flex libxml2-utils autoconf libevent-dev libzmq3-dev pkg-config libcurl4-openssl-dev valgrind
         
 Getting the Code
 ----------------
