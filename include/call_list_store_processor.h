@@ -58,7 +58,7 @@ public:
                          ExceptionHandler* exception_handler);
 
   /// Destructor
-  ~CallListStoreProcessor();
+  virtual ~CallListStoreProcessor();
 
   /// This function constructs a Cassandra request to write a call to the
   /// call list store. It runs synchronously, so must be done in a

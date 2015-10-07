@@ -125,6 +125,7 @@ CPPFLAGS_TEST  += -DUNIT_TEST \
                   -fprofile-arcs -ftest-coverage \
                   -O0 \
                   -fno-access-control \
+                  -DGTEST_USE_OWN_TR1_TUPLE=0 \
                   -I$(GTEST_DIR)/include -I$(GMOCK_DIR)/include
 
 LDFLAGS += -L${ROOT}/usr/lib
@@ -277,7 +278,7 @@ distclean: clean
 # Build rules for GMock/GTest library.
 $(OBJ_DIR_TEST)/gtest-all.o : $(GTEST_SRCS_)
 	$(CXX) $(CPPFLAGS) -I$(GTEST_DIR) -I$(GTEST_DIR)/include -I$(GMOCK_DIR) -I$(GMOCK_DIR)/include \
-            -c $(GTEST_DIR)/src/gtest-all.cc -o $@
+            -DGTEST_USE_OWN_TR1_TUPLE=0 -c $(GTEST_DIR)/src/gtest-all.cc -o $@
 
 $(OBJ_DIR_TEST)/gmock-all.o : $(GMOCK_SRCS_)
 	$(CXX) $(CPPFLAGS) -I$(GTEST_DIR) -I$(GTEST_DIR)/include -I$(GMOCK_DIR) -I$(GMOCK_DIR)/include \
