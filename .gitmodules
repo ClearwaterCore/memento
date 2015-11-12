@@ -6,28 +6,28 @@
 	url = git@github.com:gcovr/gcovr.git
 [submodule "modules/cpp-common"]
 	path = modules/cpp-common
-	url = git@github.com:Metaswitch/cpp-common.git
+	url = git@github.com:ClearwaterCore/cpp-common.git
 [submodule "modules/sas-client"]
 	path = modules/sas-client
-	url = git@github.com:Metaswitch/sas-client.git
+	url = git@github.com:ClearwaterCore/sas-client.git
 [submodule "modules/cassandra"]
 	path = modules/cassandra
 	url = https://github.com/apache/cassandra.git
 [submodule "modules/gmock"]
 	path = modules/gmock
-	url = git@github.com:Metaswitch/gmock-upstream.git
+	url = git@github.com:ClearwaterCore/gmock-upstream.git
 [submodule "modules/libevhtp"]
 	path = modules/libevhtp
-	url = git@github.com:Metaswitch/libevhtp.git
+	url = git@github.com:ClearwaterCore/libevhtp.git
 [submodule "modules/libmemcached"]
 	path = modules/libmemcached
-	url = git@github.com:Metaswitch/libmemcached-upstream.git
+	url = git@github.com:ClearwaterCore/libmemcached-upstream.git
 [submodule "build-infra"]
 	path = build-infra
-	url = git@github.com:Metaswitch/clearwater-build-infra.git
+	url = git@github.com:ClearwaterCore/clearwater-build-infra.git
 [submodule "modules/thrift"]
 	path = modules/thrift
-	url = git@github.com:Metaswitch/thrift
+	url = git@github.com:ClearwaterCore/thrift
 [submodule "modules/rapidjson"]
 	path = modules/rapidjson
 	url = git@github.com:miloyip/rapidjson.git
@@ -36,7 +36,7 @@
 	url = git@github.com:openssl/openssl.git
 [submodule "modules/app-servers"]
 	path = modules/app-servers
-	url = git@github.com:Metaswitch/clearwater-app-servers.git
+	url = git@github.com:ClearwaterCore/clearwater-app-servers.git
 [submodule "modules/pjsip"]
 	path = modules/pjsip
-	url = git@github.com:Metaswitch/pjsip-upstream.git
+	url = git@github.com:ClearwaterCore/pjsip-upstream.git
