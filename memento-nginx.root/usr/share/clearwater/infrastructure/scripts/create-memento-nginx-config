@@ -38,17 +38,19 @@
 
 . /etc/clearwater/config
 
-if [ -z $memento_hostname ]
+if [ -n "$home_domain" ]
 then
-  memento_hostname="memento.$home_domain"
-fi
+  if [ -z $memento_hostname ]
+  then
+    memento_hostname="memento.$home_domain"
+  fi
 
-# Create the config file, using the memento_hostname we've got from
-# /etc/clearwater/config
-temp_file=$(mktemp memento.nginx.XXXXXXXX)
-site_file=/etc/nginx/sites-available/memento
-enabled_file=/etc/nginx/sites-enabled/memento
-cat > $temp_file << EOF
+  # Create the config file, using the memento_hostname we've got from
+  # /etc/clearwater/config
+  temp_file=$(mktemp memento.nginx.XXXXXXXX)
+  site_file=/etc/nginx/sites-available/memento
+  enabled_file=/etc/nginx/sites-enabled/memento
+  cat > $temp_file << EOF
 upstream http_backend {
         server localhost:11888;
 
@@ -80,6 +82,9 @@ server {
                 # The client may have instructed the server to close the
                 # connection - do not forward this upstream.
                 proxy_set_header Connection "";
+
+                # Do not forward any NGV-API-Key header upstream.
+                proxy_set_header NGV-API-Key "";
         }
 
         location /org.projectclearwater.call-list {
@@ -89,6 +94,9 @@ server {
                 # The client may have instructed the server to close the
                 # connection - do not forward this upstream.
                 proxy_set_header Connection "";
+
+                # Do not forward any NGV-API-Key header upstream.
+                proxy_set_header NGV-API-Key "";
 
                 gzip on;
                 gzip_types *;
@@ -104,16 +112,17 @@ server {
 }
 EOF
 
-if ! diff $temp_file $enabled_file > /dev/null 2>&1
-then
-  # Update the site file
-  mv $temp_file $site_file
-
-  # Enable the memento nginx site
-  if ( nginx_ensite memento > /dev/null )
+  if ! diff $temp_file $enabled_file > /dev/null 2>&1
   then
-    service nginx stop
+    # Update the site file
+    mv $temp_file $site_file
+
+    # Enable the memento nginx site
+    if ( nginx_ensite memento > /dev/null )
+    then
+      service nginx stop
+    fi
+  else
+    rm $temp_file
   fi
-else
-  rm $temp_file
 fi

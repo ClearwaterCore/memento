@@ -118,7 +118,7 @@ HTTPCode HTTPDigestAuthenticate::check_auth_header(std::string authorization_hea
   {
     // No authorization information present. Default the private ID from the pub
     // public ID
-    LOG_DEBUG("No authorization header present");
+    TRC_DEBUG("No authorization header present");
 
     auth_info = false;
 
@@ -130,7 +130,7 @@ HTTPCode HTTPDigestAuthenticate::check_auth_header(std::string authorization_hea
     }
     else
     {
-      LOG_DEBUG("Private ID can't be derived from the public ID (%s)", _impu.c_str());
+      TRC_DEBUG("Private ID can't be derived from the public ID (%s)", _impu.c_str());
       rc = HTTP_BAD_REQUEST;
     }
   }
@@ -138,7 +138,7 @@ HTTPCode HTTPDigestAuthenticate::check_auth_header(std::string authorization_hea
   {
     // Check header is valid. Header should contain a username, realm, nonce, uri,
     // qop, nc, cnonce, response, opaque or only a username.
-    LOG_DEBUG("Authorization header present: %s", authorization_header.c_str());
+    TRC_DEBUG("Authorization header present: %s", authorization_header.c_str());
 
     rc = parse_auth_header(authorization_header, auth_info, response);
 
@@ -148,12 +148,12 @@ HTTPCode HTTPDigestAuthenticate::check_auth_header(std::string authorization_hea
       {
         if (response->_qop != "auth")
         {
-          LOG_DEBUG("Client requesting non-auth (%s) digest", response->_qop.c_str());
+          TRC_DEBUG("Client requesting non-auth (%s) digest", response->_qop.c_str());
           return HTTP_BAD_REQUEST;
         }
       }
 
-      LOG_DEBUG("Authorization header is in a valid form for ID %s", _impi.c_str());
+      TRC_DEBUG("Authorization header is in a valid form for ID %s", _impi.c_str());
     }
   }
 
@@ -171,7 +171,7 @@ HTTPCode HTTPDigestAuthenticate::parse_auth_header(std::string auth_header,
 
   if (digest_pos != 0)
   {
-    LOG_DEBUG("Authorization header doesn't contain Digest credentials");
+    TRC_DEBUG("Authorization header doesn't contain Digest credentials");
     return HTTP_BAD_REQUEST;
   }
 
@@ -234,7 +234,7 @@ HTTPCode HTTPDigestAuthenticate::parse_auth_header(std::string auth_header,
       (response_entry != response_key_values.end()) &&
       (opaque_entry != response_key_values.end()))
   {
-      LOG_DEBUG("Authorization header valid and complete");
+      TRC_DEBUG("Authorization header valid and complete");
       _impi = username_entry->second;
       auth_info = true;
       response->set_members(username_entry->second,
@@ -247,7 +247,7 @@ HTTPCode HTTPDigestAuthenticate::parse_auth_header(std::string auth_header,
                             response_entry->second,
                             opaque_entry->second);
 
-    LOG_DEBUG("Raising correlating marker with opaque value = %s",
+    TRC_DEBUG("Raising correlating marker with opaque value = %s",
               opaque_entry->second.c_str());
     SAS::Marker corr(_trail, MARKED_ID_GENERIC_CORRELATOR, 0);
     corr.add_var_param(opaque_entry->second);
@@ -266,13 +266,13 @@ HTTPCode HTTPDigestAuthenticate::parse_auth_header(std::string auth_header,
            (response_entry == response_key_values.end()) &&
            (opaque_entry == response_key_values.end()))
   {
-    LOG_DEBUG("Authorization header valid and minimal");
+    TRC_DEBUG("Authorization header valid and minimal");
     _impi = username_entry->second;
     auth_info = false;
   }
   else
   {
-    LOG_DEBUG("Authorization header not valid");
+    TRC_DEBUG("Authorization header not valid");
     rc = HTTP_BAD_REQUEST;
   }
 
@@ -282,7 +282,7 @@ HTTPCode HTTPDigestAuthenticate::parse_auth_header(std::string auth_header,
 HTTPCode HTTPDigestAuthenticate::retrieve_digest_from_store(std::string& www_auth_header,
                                                             Response* response)
 {
-  LOG_DEBUG("Retrieve digest for IMPU: %s, IMPI: %s", _impu.c_str(), _impi.c_str());
+  TRC_DEBUG("Retrieve digest for IMPU: %s, IMPI: %s", _impu.c_str(), _impi.c_str());
   HTTPCode rc = HTTP_OK;
 
   _stat_auth_attempt_count->increment();
@@ -319,7 +319,7 @@ HTTPCode HTTPDigestAuthenticate::request_digest_and_store(std::string& www_auth_
   HTTPCode rc = HTTP_BAD_REQUEST;
   std::string ha1;
   std::string realm;
-  LOG_DEBUG("Request digest for IMPU: %s, IMPI: %s", _impu.c_str(), _impi.c_str());
+  TRC_DEBUG("Request digest for IMPU: %s, IMPI: %s", _impu.c_str(), _impi.c_str());
 
   // Request the digest from homestead
   rc = _homestead_conn->get_digest_data(_impi, _impu, ha1, realm, _trail);
@@ -327,7 +327,7 @@ HTTPCode HTTPDigestAuthenticate::request_digest_and_store(std::string& www_auth_
   if (rc == HTTP_OK)
   {
     // Generate the digest structure and store it in memcached
-    LOG_DEBUG("Store digest for IMPU: %s, IMPI: %s", _impu.c_str(), _impi.c_str());
+    TRC_DEBUG("Store digest for IMPU: %s, IMPI: %s", _impu.c_str(), _impi.c_str());
     AuthStore::Digest* digest = new AuthStore::Digest();
     generate_digest(ha1, realm, digest);
     Store::Status status = _auth_store->set_digest(_impi, digest->_nonce, digest, _trail);
@@ -351,7 +351,7 @@ HTTPCode HTTPDigestAuthenticate::request_digest_and_store(std::string& www_auth_
     else
     {
       // LCOV_EXCL_START - Store used in UT never fails
-      LOG_ERROR("Unable to write digest to store");
+      TRC_ERROR("Unable to write digest to store");
       rc = HTTP_SERVER_ERROR;
       // LCOV_EXCL_STOP
     }
@@ -374,13 +374,13 @@ HTTPCode HTTPDigestAuthenticate::check_if_matches(AuthStore::Digest* digest,
 
   if (digest->_opaque != response->_opaque)
   {
-    LOG_DEBUG("The opaque value in the request (%s) doesn't match the stored value (%s)",
+    TRC_DEBUG("The opaque value in the request (%s) doesn't match the stored value (%s)",
               response->_opaque.c_str(), digest->_opaque.c_str());
     return HTTP_BAD_REQUEST;
   }
   else if (response->_realm != digest->_realm)
   {
-    LOG_DEBUG("Request not targeted at the stored domain. Target: %s, Realm: %s",
+    TRC_DEBUG("Request not targeted at the stored domain. Target: %s, Realm: %s",
               response->_realm.c_str(), digest->_realm.c_str());
     return HTTP_BAD_REQUEST;
   }
@@ -418,7 +418,7 @@ HTTPCode HTTPDigestAuthenticate::check_if_matches(AuthStore::Digest* digest,
 
   if (response->_response == stored_response)
   {
-    LOG_DEBUG("Client response matches stored digest");
+    TRC_DEBUG("Client response matches stored digest");
 
     // If the nonce count supplied isn't an int then this will return 0,
     // and the nonce will be treated as stale.
@@ -427,7 +427,7 @@ HTTPCode HTTPDigestAuthenticate::check_if_matches(AuthStore::Digest* digest,
     // Nonce count is stale. Request the digest from Homestead again.
     if (client_count < digest->_nonce_count)
     {
-      LOG_DEBUG("Client response's nonce count is too low");
+      TRC_DEBUG("Client response's nonce count is too low");
       SAS::Event event(_trail, SASEvent::AUTHENTICATION_OUT_OF_DATE, 0);
       SAS::report_event(event);
 
@@ -435,7 +435,7 @@ HTTPCode HTTPDigestAuthenticate::check_if_matches(AuthStore::Digest* digest,
     }
     else if (_impu != digest->_impu)
     {
-      LOG_DEBUG("Request's IMPU doesn't match stored IMPU. Target: %s, Stored: %s",
+      TRC_DEBUG("Request's IMPU doesn't match stored IMPU. Target: %s, Stored: %s",
                _impu.c_str(), digest->_impu.c_str());
       SAS::Event event(_trail, SASEvent::AUTHENTICATION_WRONG_IMPU, 0);
       event.add_var_param(_impu);
@@ -452,14 +452,14 @@ HTTPCode HTTPDigestAuthenticate::check_if_matches(AuthStore::Digest* digest,
                                                        digest->_nonce,
                                                        digest,
                                                        _trail);
-      LOG_DEBUG("Updating nonce count - store returned %d", store_rc);
+      TRC_DEBUG("Updating nonce count - store returned %d", store_rc);
 
       if (store_rc == Store::DATA_CONTENTION)
       {
         // The write to the store failed due to a CAS mismatch.  This means that
         // the digest has already been used to authenticate another request, so
         // the authentication on this request is stale. Rechallenge.
-        LOG_DEBUG("Failed to update nonce count - rechallenge");
+        TRC_DEBUG("Failed to update nonce count - rechallenge");
         SAS::Event event(_trail, SASEvent::AUTHENTICATION_OUT_OF_DATE, 1);
         SAS::report_event(event);
         rc = request_digest_and_store(www_auth_header, true, response);
@@ -470,7 +470,7 @@ HTTPCode HTTPDigestAuthenticate::check_if_matches(AuthStore::Digest* digest,
         // accept the request) or the store failed (in which case we're not sure
         // what to do for the best, and accepting the request is sensible
         // default behaviour).
-        LOG_DEBUG("Authentication accepted");
+        TRC_DEBUG("Authentication accepted");
         SAS::Event event(_trail, SASEvent::AUTHENTICATION_ACCEPTED, 0);
         SAS::report_event(event);
         _stat_auth_success_count->increment();
@@ -480,7 +480,7 @@ HTTPCode HTTPDigestAuthenticate::check_if_matches(AuthStore::Digest* digest,
   else
   {
     // Digest doesn't match - reject the request
-    LOG_DEBUG("Client response doesn't match stored digest");
+    TRC_DEBUG("Client response doesn't match stored digest");
     SAS::Event event(_trail, SASEvent::AUTHENTICATION_REJECTED, 0);
     SAS::report_event(event);
 
@@ -539,9 +539,9 @@ void HTTPDigestAuthenticate::generate_www_auth_header(std::string& www_auth_head
     www_auth_header.append(",stale=TRUE");
   }
 
-  LOG_DEBUG("WWW-Authenticate header generated: %s", www_auth_header.c_str());
+  TRC_DEBUG("WWW-Authenticate header generated: %s", www_auth_header.c_str());
 
-  LOG_DEBUG("Raising correlating marker with opaque value = %s",
+  TRC_DEBUG("Raising correlating marker with opaque value = %s",
             digest->_opaque.c_str());
   SAS::Marker corr(_trail, MARKED_ID_GENERIC_CORRELATOR, 0);
   corr.add_var_param(digest->_opaque);

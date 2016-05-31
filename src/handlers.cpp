@@ -55,7 +55,7 @@ void CallListTask::run()
   SAS::Marker start_marker(trail(), MARKER_ID_START, 1u);
   SAS::report_marker(start_marker);
 
-  LOG_DEBUG("Parsed Call Lists request. Public ID: %s", _impu.c_str());
+  TRC_DEBUG("Parsed Call Lists request. Public ID: %s", _impu.c_str());
   SAS::Event rx_event(trail(), SASEvent::CALL_LIST_REQUEST_RX, 0);
   rx_event.add_var_param(_impu);
   SAS::report_event(rx_event);
@@ -71,29 +71,38 @@ void CallListTask::run()
   called_dn.add_var_param(dn);
   SAS::report_marker(called_dn);
 
-  std::string www_auth_header;
-  std::string auth_header = _req.header("Authorization");
-  std::string method = _req.method_as_str();
-
-  rc = _auth_mod->authenticate_request(_impu, auth_header, www_auth_header, method, trail());
-
-  //LCOV_EXCL_START - These cases are tested thoroughly in individual tests
-  if (rc == HTTP_UNAUTHORIZED)
+  std::string api_key_header = _req.header("NGV-API-Key");
+  if (!api_key_header.empty() && api_key_header == _cfg->_api_key)
   {
-    LOG_DEBUG("Authorization data missing or out of date, responding with 401");
-    _req.add_header("WWW-Authenticate", www_auth_header);
-    send_http_reply(rc);
-  }
-  else if (rc != HTTP_OK)
-  {
-    LOG_DEBUG("Authorization failed, responding with %d", rc);
-    send_http_reply(rc);
+    TRC_DEBUG("Authenticating using API key");
+    respond_when_authenticated();
   }
   else
   {
-    respond_when_authenticated();
+    std::string www_auth_header;
+    std::string auth_header = _req.header("Authorization");
+    std::string method = _req.method_as_str();
+
+    rc = _auth_mod->authenticate_request(_impu, auth_header, www_auth_header, method, trail());
+
+    //LCOV_EXCL_START - These cases are tested thoroughly in individual tests
+    if (rc == HTTP_UNAUTHORIZED)
+    {
+      TRC_DEBUG("Authorization data missing or out of date, responding with 401");
+      _req.add_header("WWW-Authenticate", www_auth_header);
+      send_http_reply(rc);
+    }
+    else if (rc != HTTP_OK)
+    {
+      TRC_DEBUG("Authorization failed, responding with %d", rc);
+      send_http_reply(rc);
+    }
+    else
+    {
+      respond_when_authenticated();
+    }
+    // LCOV_EXCL_STOP
   }
-  // LCOV_EXCL_STOP
 
   SAS::Marker end_marker(trail(), MARKER_ID_END, 1u);
   SAS::report_marker(end_marker);
@@ -120,7 +129,7 @@ void CallListTask::respond_when_authenticated()
     db_err_event.add_var_param(_impu);
     SAS::report_event(db_err_event);
 
-    LOG_DEBUG("get_call_records_sync failed with result code %d", db_rc);
+    TRC_DEBUG("get_call_records_sync failed with result code %d", db_rc);
     send_http_reply(HTTP_SERVER_ERROR);
     return;
   }

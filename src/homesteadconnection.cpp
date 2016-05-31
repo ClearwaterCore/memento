@@ -43,14 +43,12 @@
 HomesteadConnection::HomesteadConnection(const std::string& server,
                                          HttpResolver* resolver,
                                          LoadMonitor *load_monitor,
-                                         LastValueCache *stats_aggregator,
                                          CommunicationMonitor* comm_monitor) :
   _http(new HttpConnection(server,
                            false,
                            resolver,
-                           "connected_homesteads",
+                           NULL,
                            load_monitor,
-                           stats_aggregator,
                            SASEvent::HttpLogLevel::PROTOCOL,
                            comm_monitor))
 {
@@ -117,12 +115,12 @@ HTTPCode HomesteadConnection::get_digest_and_parse(const std::string& path,
 
     if (doc.HasParseError())
     {
-      LOG_WARNING("Failed to parse JSON body %s", json_data.c_str());
+      TRC_WARNING("Failed to parse JSON body %s", json_data.c_str());
       rc = HTTP_BAD_REQUEST;
     }
     else if (!doc.HasMember("digest"))
     {
-      LOG_WARNING("Returned Digest is invalid. JSON is: %s", json_data.c_str());
+      TRC_WARNING("Returned Digest is invalid. JSON is: %s", json_data.c_str());
       rc = HTTP_BAD_REQUEST;
     }
 
@@ -132,22 +130,22 @@ HTTPCode HomesteadConnection::get_digest_and_parse(const std::string& path,
 
       if (!digest_v.HasMember("ha1"))
       {
-        LOG_WARNING("Returned Digest is invalid. JSON is: %s", json_data.c_str());
+        TRC_WARNING("Returned Digest is invalid. JSON is: %s", json_data.c_str());
         rc = HTTP_BAD_REQUEST;
       }
       else if (!digest_v.HasMember("qop"))
       {
-        LOG_WARNING("Returned Digest is invalid. JSON is: %s", json_data.c_str());
+        TRC_WARNING("Returned Digest is invalid. JSON is: %s", json_data.c_str());
         rc = HTTP_BAD_REQUEST;
       }
       else if (std::string(digest_v["qop"].GetString()) != "auth")
       {
-        LOG_WARNING("Returned Digest is invalid. QoP isn't auth (%s)", digest_v["qop"].GetString());
+        TRC_WARNING("Returned Digest is invalid. QoP isn't auth (%s)", digest_v["qop"].GetString());
         rc = HTTP_BAD_REQUEST;
       }
       else if (!digest_v.HasMember("realm"))
       {
-        LOG_WARNING("Returned Digest is invalid. JSON is: %s", json_data.c_str());
+        TRC_WARNING("Returned Digest is invalid. JSON is: %s", json_data.c_str());
         rc = HTTP_BAD_REQUEST;
       }
       else

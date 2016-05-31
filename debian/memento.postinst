@@ -89,19 +89,17 @@ case "$1" in
         [ ! -x /usr/share/clearwater/bin/clearwater-logging-update ] || /usr/share/clearwater/bin/clearwater-logging-update
         add_section /etc/security/limits.conf memento /etc/security/limits.conf.memento
 
-        for SCRIPT in $(ls -1 /usr/share/clearwater/infrastructure/scripts/$NAME* 2>/dev/null)
-        do
-            $SCRIPT
-        done
-
-        /usr/share/clearwater/cassandra-schemas/memento.sh || /bin/true
+        service clearwater-infrastructure restart
 
         # Record disk usage now - it will be kept up-to-date by a cron job
         memento_get_current_use > $MEMENTO_DISK_USAGE_FILE
 
         # Stop the cluster manager, so that it is restarted by Monit and picks
-        # up the new plugins.
-        service clearwater-cluster-manager stop || /bin/true
+        # and picks up the new plugins. We check whether the process is 
+        # installed to avoid warning logs when etcd isn't being used
+        if [ -x "/etc/init.d/clearwater-cluster-manager" ]; then
+          service clearwater-cluster-manager stop || /bin/true
+        fi  
 
         # Restart memento.  Always do this by terminating memento so monit will
         # restart it more-or-less immediately.  (monit restart seems to have

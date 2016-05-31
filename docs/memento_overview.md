@@ -40,6 +40,8 @@ This supports GETs to retrieve an entire call list for a public user identity; a
 
 Requests to this URL must be authenticated. Memento uses [HTTP Digest authentication] (http://tools.ietf.org/html/rfc2617), and supports the "auth" quality of protection. Memento uses the credentials provisioned in homestead for authenticating requests, in a similar way to how Sprout authenticates SIP REGISTERs. Memento also authorizes requests, ensuring that the authenticated IMPI is permitted to access the IMPU referred to in the URL of the request.
 
+Alternatively, trusted servers can authenticate requests using an NGV-API-Key header containing the API key defined by the `memento_api_key` setting in shared config.  Requests authenticated with this mechanism are authorized to access any call list.
+
 If the request has been authorized and authenticated Memento retrieves the call list fragments relating to the request IMPU from the call list store.
 If there are entries, Memento will create an XML document containing complete calls and return this to the client
 
@@ -59,6 +61,10 @@ If there are entries, Memento will create an XML document containing complete ca
       <outgoing>1</outgoing>
       <start-time>2002-05-30T09:30:10</start-time>
       <answer-time>2002-05-30T09:30:20</answer-time>
+      <answerer>
+        <URI>bob@example.com</URI>
+        <name>Bob Barker</name>
+      </answerer>
       <end-time>2002-05-30T09:35:00</end-time>
     </call>
     <call>
@@ -84,6 +90,15 @@ If there are no entries, Memento will respond with an empty call list, i.e.:
 
 Memento supports gzip compression of the call list document, and will compress it in the HTTP response if the requesting client indicates it is willing to accept gzip encoding.
 
+HTTP Notification Interface
+---------------------------
+
+Mement supports notifications via HTTP whenever a subscriber's call list is updated.  When a notification URL is configured, memento will make a POST to that URL each time call list is updated.  The body of the POST request will be a JSON document of the form:
+
+```json
+{ "impu": "<subscriber's IMPU>" }
+```
+
 Configuration
 -------------
 
@@ -108,12 +123,13 @@ An example IFC is:
 </InitialFilterCriteria>
 ```
 
-There are also four deployment wide configuration options. These should be set in /etc/clearwater/config:
+There are also five deployment wide configuration options. These should be set in /etc/clearwater/config:
 
 * `max_call_list_length`: This determines the maximum number of complete calls a subscriber can have in the call list store. This defaults to no limit.
 * `call_list_store_ttl`: This determines how long each call list fragment should be kept in the call list store. This defaults to 604800 seconds (1 week).
 * `memento_threads`: This determines the number of threads dedicated to adding call list fragments to the call list store. This defaults to 25 threads
 * `memento_disk_limit`: This determines the maximum size that the call lists database may occupy. This defaults to 20% of disk space.
+* `memento_notify_url`: If set, memento will make a POST request to this URL whenever a subscriber's call list is changed.
 
 Scalability
 -----------

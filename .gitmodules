@@ -1,9 +1,6 @@
 [submodule "modules/c-ares"]
 	path = modules/c-ares
 	url = git@github.com:bagder/c-ares.git
-[submodule "modules/gcovr"]
-	path = modules/gcovr
-	url = git@github.com:gcovr/gcovr.git
 [submodule "modules/cpp-common"]
 	path = modules/cpp-common
 	url = git@github.com:ClearwaterCore/cpp-common.git
@@ -21,25 +18,22 @@
 	url = git@github.com:ClearwaterCore/libevhtp.git
 [submodule "modules/libmemcached"]
 	path = modules/libmemcached
-	url = git@github.com:ClearwaterCore/libmemcached-upstream.git
-[submodule "modules/libevent"]
-	path = modules/libevent
-	url = git@github.com:libevent/libevent.git
+	url = git@github.com:Metaswitch/libmemcached-upstream.git
 [submodule "build-infra"]
 	path = build-infra
 	url = git@github.com:ClearwaterCore/clearwater-build-infra.git
 [submodule "modules/thrift"]
 	path = modules/thrift
-	url = https://github.com/apache/thrift.git
+	url = git@github.com:Metaswitch/thrift
 [submodule "modules/rapidjson"]
 	path = modules/rapidjson
 	url = git@github.com:miloyip/rapidjson.git
 [submodule "modules/openssl"]
 	path = modules/openssl
 	url = git@github.com:openssl/openssl.git
-[submodule "modules/app-servers"]
-	path = modules/app-servers
-	url = git@github.com:ClearwaterCore/clearwater-app-servers.git
-[submodule "modules/pjsip"]
-	path = modules/pjsip
-	url = git@github.com:ClearwaterCore/pjsip-upstream.git
+[submodule "modules/memento-common"]
+	path = modules/memento-common
+	url = git@github.com:Metaswitch/memento-common.git
+[submodule "modules/gcovr"]
+	path = modules/gcovr
+	url = git@github.com:gcovr/gcovr.git

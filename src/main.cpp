@@ -47,13 +47,15 @@
 #include "saslogger.h"
 #include "handlers.h"
 #include "sas.h"
+#include "utils.h"
 #include "load_monitor.h"
-#include "alarmdefinition.h"
+#include "memento_alarmdefinition.h"
 #include "communicationmonitor.h"
 #include "authstore.h"
 #include "mementosaslogger.h"
 #include "memento_lvc.h"
 #include "exception_handler.h"
+#include "namespace_hop.h"
 
 enum MemcachedWriteFormat
 {
@@ -78,7 +80,6 @@ struct options
   bool log_to_file;
   std::string log_directory;
   int log_level;
-  bool alarms_enabled;
   MemcachedWriteFormat memcached_write_format;
   int target_latency_us;
   int max_tokens;
@@ -86,6 +87,9 @@ struct options
   float min_token_rate;
   int exception_max_ttl;
   int http_blacklist_duration;
+  std::string api_key;
+  std::string pidfile;
+  bool daemon;
 };
 
 // Enum for option types not assigned short-forms
@@ -110,7 +114,10 @@ enum OptionTypes
   INIT_TOKEN_RATE,
   MIN_TOKEN_RATE,
   EXCEPTION_MAX_TTL,
-  HTTP_BLACKLIST_DURATION
+  HTTP_BLACKLIST_DURATION,
+  API_KEY,
+  PIDFILE,
+  DAEMON,
 };
 
 const static struct option long_opt[] =
@@ -124,7 +131,6 @@ const static struct option long_opt[] =
   {"home-domain",              required_argument, NULL, HOME_DOMAIN},
   {"sas",                      required_argument, NULL, SAS_CONFIG},
   {"access-log",               required_argument, NULL, ACCESS_LOG},
-  {"alarms-enabled",           no_argument,       NULL, ALARMS_ENABLED},
   {"memcached-write-format",   required_argument, NULL, MEMCACHED_WRITE_FORMAT},
   {"log-file",                 required_argument, NULL, LOG_FILE},
   {"log-level",                required_argument, NULL, LOG_LEVEL},
@@ -134,7 +140,10 @@ const static struct option long_opt[] =
   {"init-token-rate",          required_argument, NULL, INIT_TOKEN_RATE},
   {"min-token-rate",           required_argument, NULL, MIN_TOKEN_RATE},
   {"exception-max-ttl",        required_argument, NULL, EXCEPTION_MAX_TTL},
-  { "http-blacklist-duration", required_argument, NULL, HTTP_BLACKLIST_DURATION},
+  {"http-blacklist-duration",  required_argument, NULL, HTTP_BLACKLIST_DURATION},
+  {"api-key",                  required_argument, NULL, API_KEY},
+  {"pidfile",                  required_argument, NULL, PIDFILE},
+  {"daemon",                   no_argument,       NULL, DAEMON},
   {NULL,                       0,                 NULL, 0},
 };
 
@@ -144,7 +153,7 @@ void usage(void)
        "\n"
        " --localhost <hostname>     Specify the local hostname or IP address\n"
        " --http <address>[:<port>]\n"
-       "              Set HTTP bind address and port (default: 0.0.0.0:11888)\n"
+       "                            Set HTTP bind address and port (default: 0.0.0.0:11888)\n"
        " --http-threads N           Number of HTTP threads (default: 1)\n"
        " --http-worker-threads N    Number of HTTP worker threads (default: 50)\n"
        " --homestead-http-name <name>\n"
@@ -152,12 +161,11 @@ void usage(void)
        " --digest-timeout N         Time a digest is stored in memcached (in seconds)\n"
        " --home-domain <domain>     The home domain of the deployment\n"
        " --sas <host>,<system name>\n"
-       "    Use specified host as Service Assurance Server and specified\n"
-       "    system name to identify this system to SAS. If this option isn't\n"
-       "    specified, SAS is disabled\n"
+       "                            Use specified host as Service Assurance Server and specified\n"
+       "                            system name to identify this system to SAS. If this option isn't\n"
+       "                            specified, SAS is disabled\n"
        " --access-log <directory>\n"
        "                            Generate access logs in specified directory\n"
-       " --alarms-enabled           Whether SNMP alarms are enabled (default: false)\n"
        " --memcached-write-format\n"
        "                            The data format to use when writing authentication\n"
        "                            digests to memcached. Values are 'binary' and 'json'\n"
@@ -165,7 +173,7 @@ void usage(void)
        " --target-latency-us <usecs>\n"
        "                            Target latency above which throttling applies (default: 100000)\n"
        " --max-tokens N             Maximum number of tokens allowed in the token bucket (used by\n"
-       "                            the throttling code (default: 20))\n"
+       "                            the throttling code (default: 1000))\n"
        " --init-token-rate N        Initial token refill rate of tokens in the token bucket (used by\n"
        "                            the throttling code (default: 100.0))\n"
        " --min-token-rate N         Minimum token refill rate of tokens in the token bucket (used by\n"
@@ -175,6 +183,11 @@ void usage(void)
        "                            The actual time is randomised.\n"
        " --http-blacklist-duration <secs>\n"
        "                            The amount of time to blacklist an HTTP peer when it is unresponsive.\n"
+       " --api-key <key>            Value of NGV-API-Key header that is used to authenticate requests\n"
+       "                            for servers in the cluster.  These requests do not require user\n"
+       "                            authentication.\n"
+       " --pidfile=<filename>       Write pidfile to given path\n"
+       " --daemon                   Run as a daemon\n"
        " --log-file <directory>\n"
        "                            Log to file in specified directory\n"
        " --log-level N              Set log level to N (default: 4)\n"
@@ -220,27 +233,27 @@ int init_options(int argc, char**argv, struct options& options)
     switch (opt)
     {
     case LOCAL_HOST:
-      LOG_INFO("Local host: %s", optarg);
+      TRC_INFO("Local host: %s", optarg);
       options.local_host = std::string(optarg);
       break;
 
     case HTTP_ADDRESS:
-      LOG_INFO("HTTP bind address: %s", optarg);
+      TRC_INFO("HTTP bind address: %s", optarg);
       options.http_address = std::string(optarg);
       break;
 
     case HTTP_THREADS:
-      LOG_INFO("Number of HTTP threads: %s", optarg);
+      TRC_INFO("Number of HTTP threads: %s", optarg);
       options.http_threads = atoi(optarg);
       break;
 
     case HTTP_WORKER_THREADS:
-      LOG_INFO("Number of HTTP worker threads: %s", optarg);
+      TRC_INFO("Number of HTTP worker threads: %s", optarg);
       options.http_worker_threads = atoi(optarg);
       break;
 
     case HOMESTEAD_HTTP_NAME:
-      LOG_INFO("Homestead HTTP address: %s", optarg);
+      TRC_INFO("Homestead HTTP address: %s", optarg);
       options.homestead_http_name = std::string(optarg);
       break;
 
@@ -254,12 +267,12 @@ int init_options(int argc, char**argv, struct options& options)
         options.digest_timeout = 300;
       }
 
-      LOG_INFO("Digest timeout: %s", optarg);
+      TRC_INFO("Digest timeout: %s", optarg);
       break;
 
     case HOME_DOMAIN:
       options.home_domain = std::string(optarg);
-      LOG_INFO("Home domain: %s", optarg);
+      TRC_INFO("Home domain: %s", optarg);
       break;
 
     case SAS_CONFIG:
@@ -273,41 +286,36 @@ int init_options(int argc, char**argv, struct options& options)
       {
         options.sas_server = sas_options[0];
         options.sas_system_name = sas_options[1];
-        LOG_INFO("SAS set to %s\n", options.sas_server.c_str());
-        LOG_INFO("System name is set to %s\n", options.sas_system_name.c_str());
+        TRC_INFO("SAS set to %s\n", options.sas_server.c_str());
+        TRC_INFO("System name is set to %s\n", options.sas_system_name.c_str());
       }
       else
       {
-        LOG_INFO("Invalid --sas option, SAS disabled\n");
+        TRC_INFO("Invalid --sas option, SAS disabled\n");
       }
     }
     break;
 
     case ACCESS_LOG:
-      LOG_INFO("Access log: %s", optarg);
+      TRC_INFO("Access log: %s", optarg);
       options.access_log_enabled = true;
       options.access_log_directory = std::string(optarg);
-      break;
-
-    case ALARMS_ENABLED:
-      LOG_INFO("SNMP alarms are enabled");
-      options.alarms_enabled = true;
       break;
 
     case MEMCACHED_WRITE_FORMAT:
       if (strcmp(optarg, "binary") == 0)
       {
-        LOG_INFO("Memcached write format set to 'binary'");
+        TRC_INFO("Memcached write format set to 'binary'");
         options.memcached_write_format = MemcachedWriteFormat::BINARY;
       }
       else if (strcmp(optarg, "json") == 0)
       {
-        LOG_INFO("Memcached write format set to 'json'");
+        TRC_INFO("Memcached write format set to 'json'");
         options.memcached_write_format = MemcachedWriteFormat::JSON;
       }
       else
       {
-        LOG_WARNING("Invalid value for memcached-write-format, using '%s'."
+        TRC_WARNING("Invalid value for memcached-write-format, using '%s'."
                     "Got '%s', valid vales are 'json' and 'binary'",
                     ((options.memcached_write_format == MemcachedWriteFormat::JSON) ?
                      "json" : "binary"),
@@ -320,7 +328,7 @@ int init_options(int argc, char**argv, struct options& options)
 
       if (options.target_latency_us <= 0)
       {
-        LOG_ERROR("Invalid --target-latency-us option %s", optarg);
+        TRC_ERROR("Invalid --target-latency-us option %s", optarg);
         return -1;
       }
       break;
@@ -330,7 +338,7 @@ int init_options(int argc, char**argv, struct options& options)
 
       if (options.max_tokens <= 0)
       {
-        LOG_ERROR("Invalid --max-tokens option %s", optarg);
+        TRC_ERROR("Invalid --max-tokens option %s", optarg);
         return -1;
       }
       break;
@@ -340,7 +348,7 @@ int init_options(int argc, char**argv, struct options& options)
 
       if (options.init_token_rate <= 0)
       {
-        LOG_ERROR("Invalid --init-token-rate option %s", optarg);
+        TRC_ERROR("Invalid --init-token-rate option %s", optarg);
         return -1;
       }
       break;
@@ -350,21 +358,35 @@ int init_options(int argc, char**argv, struct options& options)
 
       if (options.min_token_rate <= 0)
       {
-        LOG_ERROR("Invalid --min-token-rate option %s", optarg);
+        TRC_ERROR("Invalid --min-token-rate option %s", optarg);
         return -1;
       }
       break;
 
     case EXCEPTION_MAX_TTL:
       options.exception_max_ttl = atoi(optarg);
-      LOG_INFO("Max TTL after an exception set to %d",
+      TRC_INFO("Max TTL after an exception set to %d",
                options.exception_max_ttl);
       break;
 
     case HTTP_BLACKLIST_DURATION:
       options.http_blacklist_duration = atoi(optarg);
-      LOG_INFO("HTTP blacklist duration set to %d",
+      TRC_INFO("HTTP blacklist duration set to %d",
                options.http_blacklist_duration);
+      break;
+
+    case API_KEY:
+      options.api_key = std::string(optarg);
+      TRC_INFO("HTTP API key set to %s",
+               options.api_key.c_str());
+      break;
+
+    case PIDFILE:
+      options.pidfile = std::string(optarg);
+      break;
+
+    case DAEMON:
+      options.daemon = true;
       break;
 
     case LOG_FILE:
@@ -377,7 +399,7 @@ int init_options(int argc, char**argv, struct options& options)
       return -1;
 
     default:
-      LOG_ERROR("Unknown option. Run with --help for options.\n");
+      TRC_ERROR("Unknown option. Run with --help for options.\n");
       return -1;
     }
   }
@@ -402,11 +424,11 @@ void signal_handler(int sig)
   signal(SIGSEGV, signal_handler);
 
   // Log the signal, along with a backtrace.
-  LOG_BACKTRACE("Signal %d caught", sig);
+  TRC_BACKTRACE("Signal %d caught", sig);
 
   // Ensure the log files are complete - the core file created by abort() below
   // will trigger the log files to be copied to the diags bundle
-  LOG_COMMIT();
+  TRC_COMMIT();
 
   // Check if there's a stored jmp_buf on the thread and handle if there is
   exception_handler->handle_exception();
@@ -438,13 +460,15 @@ int main(int argc, char**argv)
   options.access_log_enabled = false;
   options.log_to_file = false;
   options.log_level = 0;
-  options.alarms_enabled = false;
   options.memcached_write_format = MemcachedWriteFormat::JSON;
   options.target_latency_us = 100000;
-  options.max_tokens = 20;
+  options.max_tokens = 1000;
   options.init_token_rate = 100.0;
   options.min_token_rate = 10.0;
   options.exception_max_ttl = 600;
+  options.http_blacklist_duration = HttpResolver::DEFAULT_BLACKLIST_DURATION;
+  options.pidfile = "";
+  options.daemon = false;
 
   if (init_logging_options(argc, argv, options) != 0)
   {
@@ -467,7 +491,7 @@ int main(int argc, char**argv)
     Log::setLogger(new Logger(options.log_directory, prog_name));
   }
 
-  LOG_STATUS("Log level set to %d", options.log_level);
+  TRC_STATUS("Log level set to %d", options.log_level);
 
   std::stringstream options_ss;
 
@@ -479,27 +503,48 @@ int main(int argc, char**argv)
 
   std::string options_str = "Command-line options were: " + options_ss.str();
 
-  LOG_INFO(options_str.c_str());
+  TRC_INFO(options_str.c_str());
 
   if (init_options(argc, argv, options) != 0)
   {
     return 1;
   }
 
+  if (options.daemon)
+  {
+    // Options parsed and validated, time to demonize before writing out our
+    // pidfile or spwaning threads.
+    int errnum = Utils::daemonize();
+    if (errnum != 0)
+    {
+      TRC_ERROR("Failed to convert to daemon, %d (%s)", errnum, strerror(errnum));
+      exit(0);
+    }
+  }
+
+  if (options.pidfile != "")
+  {
+    int rc = Utils::lock_and_write_pidfile(options.pidfile);
+    if (rc == -1)
+    {
+      // Failure to acquire pidfile lock
+      TRC_ERROR("Could not write pidfile - exiting");
+      return 2;
+    }
+  }
+
+  start_signal_handlers();
+
   AccessLogger* access_logger = NULL;
 
   if (options.access_log_enabled)
   {
-    LOG_STATUS("Access logging enabled to %s", options.access_log_directory.c_str());
+    TRC_STATUS("Access logging enabled to %s", options.access_log_directory.c_str());
     access_logger = new AccessLogger(options.access_log_directory);
   }
 
   HealthChecker* hc = new HealthChecker();
-  pthread_t health_check_thread;
-  pthread_create(&health_check_thread,
-                 NULL,
-                 &HealthChecker::static_main_thread_function,
-                 (void*)hc);
+  hc->start_thread();
 
   // Create an exception handler. The exception handler doesn't need
   // to quiesce the process before killing it.
@@ -511,40 +556,32 @@ int main(int argc, char**argv)
             "memento",
             SASEvent::CURRENT_RESOURCE_BUNDLE,
             options.sas_server,
-            sas_write);
+            sas_write,
+            create_connection_in_management_namespace);
 
   // Ensure our random numbers are unpredictable.
   unsigned int seed;
   seed = time(NULL) ^ getpid();
   srand(seed);
 
-  Alarm* mc_comm_alarm = NULL;
-  CommunicationMonitor* mc_comm_monitor = NULL;
-  Alarm* mc_vbucket_alarm = NULL;
-  Alarm* hs_comm_alarm = NULL;
-  CommunicationMonitor* hs_comm_monitor = NULL;
-  Alarm* cass_comm_alarm = NULL;
-  CommunicationMonitor* cass_comm_monitor = NULL;
+  // Create alarm and communication monitor objects for the conditions
+  // reported by memento.
+  CommunicationMonitor* mc_comm_monitor = new CommunicationMonitor(new Alarm("memento", AlarmDef::MEMENTO_MEMCACHED_COMM_ERROR, AlarmDef::CRITICAL),
+                                                                   "Memento",
+                                                                   "Memcached");
+  Alarm* mc_vbucket_alarm = new Alarm("memento", AlarmDef::MEMENTO_MEMCACHED_VBUCKET_ERROR, AlarmDef::MAJOR);
+  CommunicationMonitor* hs_comm_monitor = new CommunicationMonitor(new Alarm("memento", AlarmDef::MEMENTO_HOMESTEAD_COMM_ERROR, AlarmDef::CRITICAL),
+                                                                   "Memento",
+                                                                   "Homestead");
+  CommunicationMonitor* cass_comm_monitor = new CommunicationMonitor(new Alarm("memento", AlarmDef::MEMENTO_CASSANDRA_COMM_ERROR, AlarmDef::CRITICAL),
+                                                                     "Memento",
+                                                                     "Cassandra");
 
-  if (options.alarms_enabled)
-  {
-    // Create alarm and communication monitor objects for the conditions
-    // reported by memento.
-    mc_comm_alarm = new Alarm("memento", AlarmDef::MEMENTO_MEMCACHED_COMM_ERROR, AlarmDef::CRITICAL);
-    mc_comm_monitor = new CommunicationMonitor(mc_comm_alarm);
-    mc_vbucket_alarm = new Alarm("memento", AlarmDef::MEMENTO_MEMCACHED_VBUCKET_ERROR, AlarmDef::MAJOR);
-    hs_comm_alarm = new Alarm("memento", AlarmDef::MEMENTO_HOMESTEAD_COMM_ERROR, AlarmDef::CRITICAL);
-    hs_comm_monitor = new CommunicationMonitor(hs_comm_alarm);
-    cass_comm_alarm = new Alarm("memento", AlarmDef::MEMENTO_CASSANDRA_COMM_ERROR, AlarmDef::CRITICAL);
-    cass_comm_monitor = new CommunicationMonitor(cass_comm_alarm);
-
-    LOG_DEBUG("Starting alarm request agent");
-    AlarmReqAgent::get_instance().start();
-    AlarmState::clear_all("memento");
-  }
+  TRC_DEBUG("Starting alarm request agent");
+  AlarmReqAgent::get_instance().start();
 
   MemcachedStore* m_store = new MemcachedStore(true,
-                                               "./memento_cluster_settings",
+                                               "./cluster_settings",
                                                mc_comm_monitor,
                                                mc_vbucket_alarm);
 
@@ -580,7 +617,7 @@ int main(int argc, char**argv)
   struct in6_addr dummy_addr;
   if (inet_pton(AF_INET6, options.local_host.c_str(), &dummy_addr) == 1)
   {
-    LOG_DEBUG("Local host is an IPv6 address");
+    TRC_DEBUG("Local host is an IPv6 address");
     af = AF_INET6;
   }
 
@@ -591,7 +628,6 @@ int main(int argc, char**argv)
   HomesteadConnection* homestead_conn = new HomesteadConnection(options.homestead_http_name,
                                                                 http_resolver,
                                                                 load_monitor,
-                                                                stats_aggregator,
                                                                 hs_comm_monitor);
 
   // Create and start the call list store.
@@ -609,14 +645,14 @@ int main(int argc, char**argv)
 
   if (store_rc != CassandraStore::OK)
   {
-    LOG_ERROR("Unable to create call list store (RC = %d)", store_rc);
+    TRC_ERROR("Unable to create call list store (RC = %d)", store_rc);
     exit(3);
   }
 
   HttpStack* http_stack = HttpStack::get_instance();
   HttpStackUtils::SimpleStatsManager stats_manager(stats_aggregator);
 
-  CallListTask::Config call_list_config(auth_store, homestead_conn, call_list_store, options.home_domain, stats_aggregator, hc);
+  CallListTask::Config call_list_config(auth_store, homestead_conn, call_list_store, options.home_domain, stats_aggregator, hc, options.api_key);
 
   MementoSasLogger sas_logger;
   HttpStackUtils::PingHandler ping_handler;
@@ -640,13 +676,13 @@ int main(int argc, char**argv)
   }
   catch (HttpStack::Exception& e)
   {
-    LOG_ERROR("Failed to initialize HttpStack stack - function %s, rc %d", e._func, e._rc);
+    TRC_ERROR("Failed to initialize HttpStack stack - function %s, rc %d", e._func, e._rc);
     exit(2);
   }
 
-  LOG_STATUS("Start-up complete - wait for termination signal");
+  TRC_STATUS("Start-up complete - wait for termination signal");
   sem_wait(&term_sem);
-  LOG_STATUS("Termination signal received - terminating");
+  TRC_STATUS("Termination signal received - terminating");
 
   try
   {
@@ -655,14 +691,13 @@ int main(int argc, char**argv)
   }
   catch (HttpStack::Exception& e)
   {
-    LOG_ERROR("Failed to stop HttpStack stack - function %s, rc %d", e._func, e._rc);
+    TRC_ERROR("Failed to stop HttpStack stack - function %s, rc %d", e._func, e._rc);
   }
 
   call_list_store->stop();
   call_list_store->wait_stopped();
 
-  hc->terminate();
-  pthread_join(health_check_thread, NULL);
+  hc->stop_thread();
 
   delete homestead_conn; homestead_conn = NULL;
   delete call_list_store; call_list_store = NULL;
@@ -676,19 +711,13 @@ int main(int argc, char**argv)
   delete hc; hc = NULL;
 
 
-  if (options.alarms_enabled)
-  {
-    // Stop the alarm request agent
-    AlarmReqAgent::get_instance().stop();
+  // Stop the alarm request agent
+  AlarmReqAgent::get_instance().stop();
 
-    delete mc_comm_monitor; mc_comm_monitor = NULL;
-    delete mc_comm_alarm; mc_comm_alarm = NULL;
-    delete mc_vbucket_alarm; mc_vbucket_alarm = NULL;
-    delete hs_comm_monitor; hs_comm_monitor = NULL;
-    delete hs_comm_alarm; hs_comm_alarm = NULL;
-    delete cass_comm_monitor; cass_comm_monitor = NULL;
-    delete cass_comm_alarm; cass_comm_alarm = NULL;
-  }
+  delete mc_comm_monitor; mc_comm_monitor = NULL;
+  delete mc_vbucket_alarm; mc_vbucket_alarm = NULL;
+  delete hs_comm_monitor; hs_comm_monitor = NULL;
+  delete cass_comm_monitor; cass_comm_monitor = NULL;
 
   SAS::term();
 

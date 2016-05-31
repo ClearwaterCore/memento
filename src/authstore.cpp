@@ -87,7 +87,7 @@ Store::Status AuthStore::set_digest(const std::string& impi,
   std::string key = impi + '\\' + nonce;
   std::string data = serialize_digest(digest);
 
-  LOG_DEBUG("Set digest for %s\n%s", key.c_str(), data.c_str());
+  TRC_DEBUG("Set digest for %s\n%s", key.c_str(), data.c_str());
 
   Store::Status status = _data_store->set_data("AuthStore",
                                                key,
@@ -99,7 +99,7 @@ Store::Status AuthStore::set_digest(const std::string& impi,
   if (status != Store::Status::OK)
   {
     // LCOV_EXCL_START - Store used in UTs doesn't fail
-    LOG_ERROR("Failed to write digest for key %s", key.c_str());
+    TRC_ERROR("Failed to write digest for key %s", key.c_str());
 
     SAS::Event event(trail, SASEvent::AUTHSTORE_SET_FAILURE, 0);
     event.add_var_param(key);
@@ -129,11 +129,11 @@ Store::Status AuthStore::get_digest(const std::string& impi,
   uint64_t cas;
   Store::Status status = _data_store->get_data("AuthStore", key, data, cas, trail);
 
-  LOG_DEBUG("Get digest for %s", key.c_str());
+  TRC_DEBUG("Get digest for %s", key.c_str());
 
   if (status != Store::Status::OK)
   {
-    LOG_DEBUG("Failed to retrieve digest for %s", key.c_str());
+    TRC_DEBUG("Failed to retrieve digest for %s", key.c_str());
     SAS::Event event(trail, SASEvent::AUTHSTORE_GET_FAILURE, 0);
     event.add_var_param(key);
     SAS::report_event(event);
@@ -142,7 +142,7 @@ Store::Status AuthStore::get_digest(const std::string& impi,
   }
   else
   {
-    LOG_DEBUG("Retrieved Digest for %s\n%s", key.c_str(), data.c_str());
+    TRC_DEBUG("Retrieved Digest for %s\n%s", key.c_str(), data.c_str());
     digest = deserialize_digest(data);
 
     if (digest != NULL)
@@ -158,7 +158,7 @@ Store::Status AuthStore::get_digest(const std::string& impi,
     }
     else
     {
-      LOG_INFO("Failed to deserialize record");
+      TRC_INFO("Failed to deserialize record");
       SAS::Event event(trail, SASEvent::AUTHSTORE_DESERIALIZATION_FAILURE, 0);
       event.add_var_param(key);
       event.add_var_param(data);
@@ -197,18 +197,18 @@ AuthStore::Digest* AuthStore::deserialize_digest(const std::string& digest_s)
        ++it)
   {
     SerializerDeserializer* deserializer = *it;
-    LOG_DEBUG("Try '%s' deserializer", deserializer->name().c_str());
+    TRC_DEBUG("Try '%s' deserializer", deserializer->name().c_str());
 
     digest = deserializer->deserialize_digest(digest_s);
 
     if (digest != NULL)
     {
-      LOG_DEBUG("Deserialization successful");
+      TRC_DEBUG("Deserialization successful");
       break;
     }
     else
     {
-      LOG_DEBUG("Deserialization failed");
+      TRC_DEBUG("Deserialization failed");
     }
   }
 
@@ -247,7 +247,7 @@ AuthStore::Digest* AuthStore::BinarySerializerDeserializer::
 #define ASSERT_NOT_EOF(STREAM)                                                 \
 if ((STREAM).eof())                                                            \
 {                                                                              \
-  LOG_INFO("Failed to deserialize binary document (hit EOF at %s:%d)",         \
+  TRC_INFO("Failed to deserialize binary document (hit EOF at %s:%d)",         \
            __FILE__, __LINE__);                                                \
   delete digest; digest = NULL;                                                \
   return NULL;                                                                 \
@@ -322,14 +322,14 @@ std::string AuthStore::JsonSerializerDeserializer::
 AuthStore::Digest* AuthStore::JsonSerializerDeserializer::
   deserialize_digest(const std::string& digest_s)
 {
-  LOG_DEBUG("Deserialize JSON document: %s", digest_s.c_str());
+  TRC_DEBUG("Deserialize JSON document: %s", digest_s.c_str());
 
   rapidjson::Document doc;
   doc.Parse<0>(digest_s.c_str());
 
   if (doc.HasParseError())
   {
-    LOG_DEBUG("Failed to parse document");
+    TRC_DEBUG("Failed to parse document");
     return NULL;
   }
 
@@ -353,7 +353,7 @@ AuthStore::Digest* AuthStore::JsonSerializerDeserializer::
   }
   catch(JsonFormatError err)
   {
-    LOG_INFO("Failed to deserialize JSON document (hit error at %s:%d)",
+    TRC_INFO("Failed to deserialize JSON document (hit error at %s:%d)",
              err._file, err._line);
     delete digest; digest = NULL;
   }

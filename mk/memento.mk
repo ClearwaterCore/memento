@@ -9,6 +9,9 @@ memento:
 memento_test:
 	make -C ${MEMENTO_DIR} test
 
+memento_full_test:
+	make -C ${MEMENTO_DIR} full_test
+
 memento_clean:
 	make -C ${MEMENTO_DIR} clean
 

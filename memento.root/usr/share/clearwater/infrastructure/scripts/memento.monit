@@ -41,7 +41,7 @@ cat > /etc/monit/conf.d/memento.monit <<EOF
 # Check the Memento process.
 
 # Monitor the service's PID file and memory use.
-check process memento_process with pidfile /var/run/memento.pid
+check process memento_process with pidfile /var/run/memento/memento.pid
   group memento
 
   # The start, stop and restart commands are linked to alarms
@@ -53,10 +53,12 @@ check process memento_process with pidfile /var/run/memento.pid
   # generate a core file and trigger diagnostics collection.
   if memory > 80% for 6 cycles then exec "/bin/bash -c '/usr/share/clearwater/bin/issue_alarm.py monit 5000.3; /etc/init.d/memento abort'"
 
-  # Clear any alarms if the process has been running for 30 seconds
-  if uptime < 30 seconds
-     then exec "/bin/true"
-     else if succeeded then exec "/usr/share/clearwater/bin/issue_alarm.py monit 5000.1"
+# Clear any alarms if the process has been running long enough.
+check program memento_uptime with path /usr/share/clearwater/infrastructure/scripts/check-memento-uptime
+  group memento
+  depends on memento_process
+  every 3 cycles
+  if status != 0 then alert
 
 # Check the HTTP interface. This depends on the Memento process (and so won't run
 # unless the Memento process is running)
