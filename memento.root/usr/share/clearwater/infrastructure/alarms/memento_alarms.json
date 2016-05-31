@@ -1,0 +1,142 @@
+{
+    "alarms": [
+        {
+            "index": 5000,
+            "cause": "SOFTWARE_ERROR",
+            "name": "MEMENTO_HTTP_SERVER_PROCESS_FAIL",
+            "levels": [
+                {
+                    "severity": "CLEARED",
+                    "details": "The Memento HTTP Server process has been restored to normal operation.",
+                    "description": "Memento: HTTP Server process failure cleared.",
+                    "cause": "The Meneto HTTP Server process has been restored to normal operation. The previously issued alarm has been cleared.",
+                    "effect": "Normal call list retrieval has been restored.",
+                    "action": "No action."
+                },
+                {
+                    "severity": "CRITICAL",
+                    "details": "While this condition persists, all attempts to retrieve call lists from this Memento server will fail, but no call list records will be lost. Monit will automatically attempt to restart the HTTP server process.",
+                    "description": "Memento: HTTP Server process failure.",
+                    "cause": "Monit has detected that the local Memento HTTP Server process has failed.",
+                    "effect": "All attempts to retrieve call lists from this Memento server will fail, but no call list records will be lost.",
+                    "action": "If the alarm does not clear, contact your support representative."
+                }
+            ]
+        },
+        {
+            "index": 5002,
+            "cause": "UNDERLYING_RESOURCE_UNAVAILABLE",
+            "name": "MEMENTO_MEMCACHED_COMM_ERROR",
+            "levels": [
+                {
+                    "severity": "CLEARED",
+                    "details": "Memento communication to Memcached has been restored.",
+                    "description": "Memento: Memcached communication error cleared.",
+                    "cause": "Memento communication to Memcached has been restored. The previously issued alarm has been cleared.",
+                    "effect": "Normal Memento operation has been restored.",
+                    "action": "No action."
+                },
+                {
+                    "severity": "MAJOR",
+                    "details": "Memento is unable to contact any Memcached processes. It will periodically attempt to reconnect. Ensure that at least one Memcached is operational and that network connectivity exists between it and Memento.",
+                    "description": "Memento: Memcached communication error.",
+                    "cause": "Memento is unable to contact any Memcached processes.",
+                    "effect": "All attempts to retrieve call lists from this Memento server will fail, but no call list records will be lost.",
+                    "action": "Ensure that all Memcached processes are operational and that network connectivity exists between them and Memento. If the alarm does not clear then contact your support representative."
+                }
+            ]
+        },
+        {
+            "index": 5003,
+            "cause": "UNDERLYING_RESOURCE_UNAVAILABLE",
+            "name": "MEMENTO_MEMCACHED_VBUCKET_ERROR",
+            "levels": [
+                {
+                    "severity": "CLEARED",
+                    "details": "Memento communication to Memcached has been restored for all subscribers.",
+                    "description": "Memento: Memcached vBucket communication error cleared.",
+                    "cause": "Memento communication to Memcached has been restored for all subscribers. The previously issued alarm has been cleared.",
+                    "effect": "Normal Memento operation has been restored.",
+                    "action": "No action."
+                },
+                {
+                    "severity": "MAJOR",
+                    "details": "Memento is unable to contact any Memcached processes for a subset of subscribers. Ensure that all Memcached processes are operational and that network connectivity exists between them and Memento.",
+                    "description": "Memento: Memcached vBucket communication error.",
+                    "cause": "Memento is unable to contact any Memcached processes for a subset of subscribers.",
+                    "effect": "Some attempts to retrieve call lists from this Memento server will fail, but no call list records will be lost.",
+                    "action": "Ensure that all Memcached processes are operational and that network connectivity exists between them and Memento. If the alarm does not clear then contact your support representative."
+                }
+            ]
+        },
+        {
+            "index": 5004,
+            "cause": "UNDERLYING_RESOURCE_UNAVAILABLE",
+            "name": "MEMENTO_HOMESTEAD_COMM_ERROR",
+            "levels": [
+                {
+                    "severity": "CLEARED",
+                    "details": "Memento communication to at least one Homestead has been restored.",
+                    "description": "Memento: Homestead communication error cleared.",
+                    "cause": "Memento communication to at least one Homestead has been restored. The previously issued alarm has been cleared.",
+                    "effect": "Normal Memento operation has been restored.",
+                    "action": "No action."
+                },
+                {
+                    "severity": "CRITICAL",
+                    "details": "Memento is unable to contact any Homesteads. It will periodically attempt to reconnect. If this alarm does not clear, ensure that at least one Homestead is operational and that network connectivity exists between it and Memento.",
+                    "description": "Memento: Homestead communication error.",
+                    "cause": "Memento is unable to contact any Homesteads.",
+                    "effect": "All new attempts to retrieve call lists from this Memento server will fail, but no call list records will be lost.",
+                    "action": "Ensure that at least one Homestead is operational and that network connectivity exists between it and Memento. If the alarm does not clear, contact your support representative."
+                }
+            ]
+        },
+        {
+            "index": 5005,
+            "cause": "UNDERLYING_RESOURCE_UNAVAILABLE",
+            "name": "MEMENTO_CASSANDRA_COMM_ERROR",
+            "levels": [
+                {
+                    "severity": "CLEARED",
+                    "details": "Memento HTTP Server communication to the local Cassandra has been restored.",
+                    "description": "Memento: HTTP Server Cassandra communication error cleared.",
+                    "cause": "Memento communication to the local Cassandra has been restored. The previously issued alarm has been cleared.",
+                    "effect": "Normal Memento operation has been restored.",
+                    "action": "No action."
+                },
+                {
+                    "severity": "CRITICAL",
+                    "details": "While this condition persists, requests to this server to retrieve call lists will fail, but no call list records will be lost.  The HTTP Server will periodically attempt to reconnect. ",
+                    "description": "Memento: HTTP Server Cassandra communication error.",
+                    "cause": "Memento is unable to contact the local Cassandra.",
+                    "effect": "All attempts to retrieve call lists from this Memento server will fail, but no call list records will be lost.",
+                    "action": "Monitor for the alarm to clear and confirm the system is operating normally. Determine if the local Cassandra process has failed. If it has then make sure it returns to service. If the alarm doesn't clear then contact your support representative."
+                }
+            ]
+        },
+        {
+            "index": 5007,
+            "cause": "UNDERLYING_RESOURCE_UNAVAILABLE",
+            "name": "MEMENTO_HTTP_SERVER_COMM_ERROR",
+            "levels": [
+                {
+                    "severity": "CLEARED",
+                    "details": "Memento Web Proxy communication to the local HTTP Server has been restored.",
+                    "description": "Memento: Web Proxy HTTP Server error cleared.",
+                    "cause": "The Memento Web Proxy is able to contact the HTTP server.",
+                    "effect": "Normal Memento operation has been restored.",
+                    "action": "No action."
+                },
+                {
+                    "severity": "CRITICAL",
+                    "details": "While this condition persists, requests to this server to retrieve call lists will fail, but no call list records will be lost.  The Web Proxy will attempt to reconnect.",
+                    "description": "Memento: Web Proxy HTTP Server communication error.",
+                    "cause": "The Memento Web Proxy is unable to contact the HTTP server.",
+                    "effect": "All attempts to retrieve call lists from this Memento server will fail, but no call list records will be lost.",
+                    "action": "If the alarm does not clear, contact your support representative."
+                }
+            ]
+        }
+    ]
+}

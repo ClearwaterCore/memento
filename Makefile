@@ -16,7 +16,7 @@ DEB_NAMES := memento-libs memento-libs-dbg memento memento-dbg memento-nginx
 INCLUDE_DIR := ${INSTALL_DIR}/include
 LIB_DIR := ${INSTALL_DIR}/lib
 
-SUBMODULES := c-ares libevhtp libmemcached thrift cassandra sas-client openssl pjsip
+SUBMODULES := c-ares libevhtp libmemcached thrift cassandra sas-client openssl
 
 include $(patsubst %, ${MK_DIR}/%.mk, ${SUBMODULES})
 include ${MK_DIR}/memento.mk
@@ -25,7 +25,9 @@ build: ${SUBMODULES} memento
 
 test: ${SUBMODULES} memento_test
 
-testall: $(patsubst %, %_test, ${SUBMODULES}) test
+full_test: ${SUBMODULES} memento_full_test
+
+testall: $(patsubst %, %_test, ${SUBMODULES}) full_test
 
 clean: $(patsubst %, %_clean, ${SUBMODULES}) memento_clean
 	rm -rf ${ROOT}/usr

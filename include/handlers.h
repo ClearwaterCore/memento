@@ -58,12 +58,14 @@ public:
            CallListStore::Store* call_list_store,
            std::string home_domain,
            LastValueCache* stats_aggregator,
-           HealthChecker* hc) :
+           HealthChecker* hc,
+           std::string api_key) :
       _auth_store(auth_store),
       _homestead_conn(homestead_conn),
       _call_list_store(call_list_store),
       _home_domain(home_domain),
-      _health_checker(hc) 
+      _health_checker(hc),
+      _api_key(api_key)
     {
       _stat_auth_challenge_count = new StatisticCounter("auth_challenges",
                                                         stats_aggregator);
@@ -100,6 +102,7 @@ public:
     CallListStore::Store* _call_list_store;
     std::string _home_domain;
     HealthChecker* _health_checker;
+    std::string _api_key;
     StatisticCounter* _stat_auth_challenge_count;
     StatisticCounter* _stat_auth_attempt_count;
     StatisticCounter* _stat_auth_success_count;

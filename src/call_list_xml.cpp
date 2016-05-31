@@ -82,7 +82,7 @@ std::string xml_from_call_records(const std::vector<CallListStore::CallFragment>
         invalid_record.add_static_param(record_fragments[0].type);
         SAS::report_event(invalid_record);
 
-        LOG_WARNING("Only one entry for call record %s but it was not REJECTED", record_id.c_str());
+        TRC_WARNING("Only one entry for call record %s but it was not REJECTED", record_id.c_str());
       }
     }
     else if (record_fragments.size() == 2)
@@ -103,7 +103,7 @@ std::string xml_from_call_records(const std::vector<CallListStore::CallFragment>
         invalid_record.add_static_param(record_fragments[1].type);
         SAS::report_event(invalid_record);
 
-        LOG_WARNING("Found two entries for call record %s but it was not a BEGIN followed by an END",
+        TRC_WARNING("Found two entries for call record %s but it was not a BEGIN followed by an END",
                     record_id.c_str());
       }
     }
@@ -126,7 +126,7 @@ std::string xml_from_call_records(const std::vector<CallListStore::CallFragment>
       invalid_record.add_static_param(record_fragments.size());
       SAS::report_event(invalid_record);
 
-      LOG_WARNING("Found %d entries for call record %s, expected 1 (REJECTED) or 2 (BEGIN/END)",
+      TRC_WARNING("Found %d entries for call record %s, expected 1 (REJECTED) or 2 (BEGIN/END)",
                   record_fragments.size(),
                   record_id.c_str());
     }

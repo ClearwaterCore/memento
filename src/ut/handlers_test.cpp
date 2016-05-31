@@ -73,7 +73,7 @@ public:
     _call_store = new MockCallListStore();
     _hc = new FakeHomesteadConnection();
     _health_checker = new HealthChecker();
-    _cfg = new CallListTask::Config(_auth_store, _hc, _call_store, "localhost", _stats_aggregator, _health_checker);
+    _cfg = new CallListTask::Config(_auth_store, _hc, _call_store, "localhost", _stats_aggregator, _health_checker, "APIKEY");
 
   }
   virtual ~HandlersTest()
@@ -129,6 +129,57 @@ TEST_F(HandlersTest, HandlerCreationInvalidMethod)
   CallListTask* handler = new CallListTask(req, _cfg, 0);
 
   EXPECT_CALL(*_httpstack, send_reply(_, 405, _));
+  handler->run();
+}
+
+TEST_F(HandlersTest, ApiKey)
+{
+  std::vector<CallListStore::CallFragment> records;
+  MockHttpStack::Request req(_httpstack,
+                             "/org.projectclearwater.call-list/users/sip:6505551234@home.domain/call-list.xml",
+                             "",
+                             "");
+  req.add_header_to_incoming_req("NGV-API-Key", "APIKEY");
+
+  CallListTask* handler = new CallListTask(req, _cfg, 0);
+
+  EXPECT_CALL(*_call_store, get_call_fragments_sync(_, _, _))
+    .WillOnce(DoAll(SetArgReferee<1>(records), Return(CassandraStore::ResultCode::OK)));
+
+  EXPECT_CALL(*_httpstack, send_reply(_, 200, _));
+  handler->run();
+
+  EXPECT_EQ("<call-list><calls></calls></call-list>", req.content());
+}
+
+TEST_F(HandlersTest, InvalidApiKey)
+{
+  std::vector<CallListStore::CallFragment> records;
+  MockHttpStack::Request req(_httpstack,
+                             "/org.projectclearwater.call-list/users/sip:6505551234@home.domain/call-list.xml",
+                             "",
+                             "");
+  req.add_header_to_incoming_req("NGV-API-Key", "INVALID-APIKEY");
+
+  CallListTask* handler = new CallListTask(req, _cfg, 0);
+
+  EXPECT_CALL(*_httpstack, send_reply(_, 404, _));
+  handler->run();
+}
+
+TEST_F(HandlersTest, EmptyApiKey)
+{
+  std::vector<CallListStore::CallFragment> records;
+  CallListTask::Config cfg(_auth_store, _hc, _call_store, "localhost", _stats_aggregator, _health_checker, "");
+  MockHttpStack::Request req(_httpstack,
+                             "/org.projectclearwater.call-list/users/sip:6505551234@home.domain/call-list.xml",
+                             "",
+                             "");
+  req.add_header_to_incoming_req("NGV-API-Key", "");
+
+  CallListTask* handler = new CallListTask(req, &cfg, 0);
+
+  EXPECT_CALL(*_httpstack, send_reply(_, 404, _));
   handler->run();
 }
 
@@ -453,7 +504,7 @@ TEST_F(HandlersTest, DbError)
 TEST_F(HandlersTest, HTTPOKPassesHealthCheck)
 {
   MockHealthChecker mock_health_checker;
-  CallListTask::Config cfg(_auth_store, _hc, _call_store, "localhost", _stats_aggregator, &mock_health_checker);
+  CallListTask::Config cfg(_auth_store, _hc, _call_store, "localhost", _stats_aggregator, &mock_health_checker, "APIKEY");
 
   MockHttpStack::Request req(_httpstack, "/", "", "");
 
@@ -472,7 +523,7 @@ TEST_F(HandlersTest, HTTPOKPassesHealthCheck)
 TEST_F(HandlersTest, HTTPErrorFailsHealthCheck)
 {
   MockHealthChecker mock_health_checker;
-  CallListTask::Config cfg(_auth_store, _hc, _call_store, "localhost", _stats_aggregator, &mock_health_checker);
+  CallListTask::Config cfg(_auth_store, _hc, _call_store, "localhost", _stats_aggregator, &mock_health_checker, "APIKEY");
 
   MockHttpStack::Request req(_httpstack, "/", "", "");
 

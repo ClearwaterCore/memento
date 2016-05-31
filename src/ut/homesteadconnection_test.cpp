@@ -47,14 +47,12 @@ class HomesteadConnectionTest : public ::testing::Test
 {
   FakeHttpResolver _resolver;
   LoadMonitor _lm;
-  MementoLVC _stats_aggregator;
   HomesteadConnection _hc;
 
   HomesteadConnectionTest():
     _resolver("10.42.42.42"),
     _lm(100000, 20, 10, 10),
-    _stats_aggregator(10),
-    _hc("narcissus", &_resolver, &_lm, &_stats_aggregator)
+    _hc("narcissus", &_resolver, &_lm)
   {
     fakecurl_responses.clear();
     fakecurl_responses["http://10.42.42.42:80/impi/privid1/av?impu=pubid1"] = "{\"digest\":{\"realm\": \"cw-ngv.com\",\"qop\": \"auth\",\"ha1\": \"12345678\"}}";

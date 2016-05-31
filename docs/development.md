@@ -2,7 +2,7 @@
 
 This document describes how to build and test Memento.
 
-Memento development is ongoing on Ubuntu 12.04, so the processes described
+Memento development is ongoing on Ubuntu 14.04, so the processes described
 below are targetted for (and tested on) this platform.  The code has been
 written to be portable, though, and should compile on other platforms once the
 required dependencies are installed.
@@ -12,7 +12,7 @@ Memento consists of two main components, Memento SIP and Memento HTTP. Memento S
 ## Memento (SIP)
 
 Memento (SIP) is integrated into the Application Server framework provided by Sprout,
-and can be run on the Sprout nodes or as a standalone node. Memento (SIP) is built as part of the [Sprout build](https://github.com/Metaswitch/sprout/blob/dev/docs/Development.md).
+and can be run on the Sprout nodes or as a standalone node. Memento (SIP) is built as part of the [Sprout build](https://github.com/Metaswitch/sprout/blob/dev/docs/Development.md) and the code is mastered [here](https://github.com/Metaswitch/memento-as)
 
 ## Memento (HTTP)
 
@@ -22,7 +22,7 @@ Dependencies
 Memento depends on a number of tools and libraries.  Some of these are
 included as git submodules, but the rest must be installed separately.
 
-On Ubuntu 12.04,
+On Ubuntu 14.04,
 
 1.  update the package list
 
@@ -30,7 +30,7 @@ On Ubuntu 12.04,
 
 2.  install the required packages
 
-        sudo apt-get install libboost-all-dev make cmake flex bison libtool libcloog-ppl0 git gcc g++ bison flex libxml2-utils autoconf libevent-dev  libzmq3-dev pkg-config libcurl4-openssl-dev valgrind
+        sudo apt-get install libboost-all-dev make cmake flex bison libtool libcloog-ppl1 git gcc g++ bison flex libxml2-utils autoconf libevent-dev libzmq3-dev pkg-config libcurl4-openssl-dev valgrind devscripts debhelper
         
 Getting the Code
 ----------------
