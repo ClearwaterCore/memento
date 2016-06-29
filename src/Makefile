@@ -54,7 +54,8 @@ memento_test_SOURCES := ${COMMON_SOURCES} \
                         fakecurl.cpp \
                         fakehomesteadconnection.cpp \
                         mock_sas.cpp \
-                        curl_interposer.cpp
+                        curl_interposer.cpp \
+                        pthread_cond_var_helper.cpp
 
 COMMON_CPPFLAGS := -I../include \
                    -I../usr/include \

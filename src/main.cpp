@@ -566,19 +566,29 @@ int main(int argc, char**argv)
 
   // Create alarm and communication monitor objects for the conditions
   // reported by memento.
-  CommunicationMonitor* mc_comm_monitor = new CommunicationMonitor(new Alarm("memento", AlarmDef::MEMENTO_MEMCACHED_COMM_ERROR, AlarmDef::CRITICAL),
+  AlarmManager* alarm_manager = new AlarmManager();
+  CommunicationMonitor* mc_comm_monitor = new CommunicationMonitor(new Alarm(alarm_manager,
+                                                                             "memento",
+                                                                             AlarmDef::MEMENTO_MEMCACHED_COMM_ERROR,
+                                                                             AlarmDef::CRITICAL),
                                                                    "Memento",
                                                                    "Memcached");
-  Alarm* mc_vbucket_alarm = new Alarm("memento", AlarmDef::MEMENTO_MEMCACHED_VBUCKET_ERROR, AlarmDef::MAJOR);
-  CommunicationMonitor* hs_comm_monitor = new CommunicationMonitor(new Alarm("memento", AlarmDef::MEMENTO_HOMESTEAD_COMM_ERROR, AlarmDef::CRITICAL),
+  Alarm* mc_vbucket_alarm = new Alarm(alarm_manager,
+                                      "memento",
+                                      AlarmDef::MEMENTO_MEMCACHED_VBUCKET_ERROR,
+                                      AlarmDef::MAJOR);
+  CommunicationMonitor* hs_comm_monitor = new CommunicationMonitor(new Alarm(alarm_manager,
+                                                                             "memento",
+                                                                             AlarmDef::MEMENTO_HOMESTEAD_COMM_ERROR,
+                                                                             AlarmDef::CRITICAL),
                                                                    "Memento",
                                                                    "Homestead");
-  CommunicationMonitor* cass_comm_monitor = new CommunicationMonitor(new Alarm("memento", AlarmDef::MEMENTO_CASSANDRA_COMM_ERROR, AlarmDef::CRITICAL),
+  CommunicationMonitor* cass_comm_monitor = new CommunicationMonitor(new Alarm(alarm_manager,
+                                                                               "memento",
+                                                                               AlarmDef::MEMENTO_CASSANDRA_COMM_ERROR,
+                                                                               AlarmDef::CRITICAL),
                                                                      "Memento",
                                                                      "Cassandra");
-
-  TRC_DEBUG("Starting alarm request agent");
-  AlarmReqAgent::get_instance().start();
 
   MemcachedStore* m_store = new MemcachedStore(true,
                                                "./cluster_settings",
@@ -710,14 +720,11 @@ int main(int argc, char**argv)
   delete exception_handler; exception_handler = NULL;
   delete hc; hc = NULL;
 
-
-  // Stop the alarm request agent
-  AlarmReqAgent::get_instance().stop();
-
   delete mc_comm_monitor; mc_comm_monitor = NULL;
   delete mc_vbucket_alarm; mc_vbucket_alarm = NULL;
   delete hs_comm_monitor; hs_comm_monitor = NULL;
   delete cass_comm_monitor; cass_comm_monitor = NULL;
+  delete alarm_manager; alarm_manager = NULL;
 
   SAS::term();
 

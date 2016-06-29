@@ -87,7 +87,7 @@ get_settings()
   num_http_worker_threads=$(( $num_cpus * 50 ))
   . /etc/clearwater/config
 
-  homestead_http_name=$(python /usr/share/clearwater/bin/bracket_ipv6_address.py $hs_hostname)
+  homestead_http_name=$(/usr/share/clearwater/bin/bracket-ipv6-address $hs_hostname)
 
   # Set up a default cluster_settings file if it does not exist.
   [ -f /etc/clearwater/cluster_settings ] || echo "servers=$local_ip:11211" > /etc/clearwater/cluster_settings

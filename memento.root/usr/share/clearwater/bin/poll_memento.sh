@@ -36,6 +36,6 @@
 
 # Note this doesn't work in multiple networks
 . /etc/clearwater/config
-http_ip=$(/usr/share/clearwater/bin/bracket_ipv6_address.py $local_ip)
+http_ip=$(/usr/share/clearwater/bin/bracket-ipv6-address $local_ip)
 /usr/share/clearwater/bin/poll-http $http_ip:11888
 exit $?
