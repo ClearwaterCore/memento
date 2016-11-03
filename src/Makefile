@@ -2,6 +2,7 @@ TARGETS := memento
 TEST_TARGETS := memento_test
 
 COMMON_SOURCES := localstore.cpp \
+                  memcached_connection_pool.cpp \
                   memcachedstore.cpp \
                   memcachedstoreview.cpp \
                   memcached_config.cpp \
@@ -17,16 +18,19 @@ COMMON_SOURCES := localstore.cpp \
                   httpstack_utils.cpp \
                   accesslogger.cpp \
                   authstore.cpp \
+                  http_connection_pool.cpp \
+                  httpclient.cpp \
                   httpconnection.cpp \
                   homesteadconnection.cpp \
                   httpdigestauthenticate.cpp \
+                  cassandra_connection_pool.cpp \
                   cassandra_store.cpp \
                   call_list_store.cpp \
                   call_list_xml.cpp \
                   dnsparser.cpp \
                   baseresolver.cpp \
                   dnscachedresolver.cpp \
-                  httpresolver.cpp \
+                  a_record_resolver.cpp \
                   mementosaslogger.cpp \
                   alarm.cpp \
                   base_communication_monitor.cpp \
@@ -54,7 +58,8 @@ memento_test_SOURCES := ${COMMON_SOURCES} \
                         fakecurl.cpp \
                         fakehomesteadconnection.cpp \
                         mock_sas.cpp \
-                        curl_interposer.cpp
+                        curl_interposer.cpp \
+                        pthread_cond_var_helper.cpp
 
 COMMON_CPPFLAGS := -I../include \
                    -I../usr/include \

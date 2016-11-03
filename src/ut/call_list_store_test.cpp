@@ -43,6 +43,9 @@
 #include "mock_cassandra_store.h"
 #include "cass_test_utils.h"
 #include "mock_sas.h"
+#include "mock_cassandra_connection_pool.h"
+#include "mock_a_record_resolver.h"
+#include "fake_base_addr_iterator.h"
 
 #include "call_list_store.h"
 #include "mementosasevent.h"
@@ -53,14 +56,17 @@ const SAS::TrailId FAKE_TRAIL = 0x123456;
 
 // The class under test.
 //
-// We can't test the call list store directly as we need to supply a mock
-// client, and therefore override the get_client() and relese_client()
-// methods.
+// We don't test the Cache class directly as we need to use a
+// MockCassandraConnectionPool that we can use to return MockCassandraClients.
+// However all other methods are the real ones from Cache.
 class TestCallListStore : public CallListStore::Store
 {
 public:
-  MOCK_METHOD0(get_client, CassandraStore::Client*());
-  MOCK_METHOD0(release_client, void());
+  void set_conn_pool(CassandraStore::CassandraConnectionPool* pool)
+  {
+    delete _conn_pool;
+    _conn_pool = pool;
+  }
 };
 
 class CallListStoreFixture : public ::testing::Test
@@ -68,11 +74,29 @@ class CallListStoreFixture : public ::testing::Test
 public:
   CallListStoreFixture()
   {
-    // The store always returns the mock client.
-    EXPECT_CALL(_store, get_client()).WillRepeatedly(Return(&_client));
-    EXPECT_CALL(_store, release_client()).WillRepeatedly(Return());
+    _iter = new FakeBaseAddrIterator(create_target("10.0.0.1"));
 
-    _store.configure_connection("localhost", 1234, NULL);
+    // This passes ownership of the pool to the _store
+    MockCassandraConnectionPool* pool = new MockCassandraConnectionPool();
+    _store.set_conn_pool(pool);
+
+    _store.configure_connection("localhost", 1234, NULL, &_resolver);
+
+    // Just return a fake iterator every time
+    EXPECT_CALL(_resolver, resolve_iter(_,_,_)).WillRepeatedly(Return(_iter));
+
+    // The pool should just repeatedly return _client
+    EXPECT_CALL(*pool, get_client()).Times(testing::AnyNumber()).WillRepeatedly(Return(&_client));
+
+    // Not interested in the resolver success calls
+    EXPECT_CALL(_resolver, success(_)).Times(testing::AnyNumber());
+
+    // We expect connect(), is_connected() and set_keyspace() to be called in
+    // every test. By default, just mock them out so that we don't get warnings.
+    EXPECT_CALL(_client, set_keyspace(_)).Times(testing::AnyNumber());
+    EXPECT_CALL(_client, connect()).Times(testing::AnyNumber());
+    EXPECT_CALL(_client, is_connected()).Times(testing::AnyNumber()).WillRepeatedly(Return(false));
+
     CassandraStore::ResultCode rc = _store.start();
     EXPECT_EQ(rc, CassandraStore::OK);
   }
@@ -81,10 +105,22 @@ public:
   {
     _store.stop();
     _store.wait_stopped();
+    delete _iter; _iter = NULL;
+  }
+
+  AddrInfo create_target(std::string address)
+  {
+    AddrInfo ai;
+    BaseResolver::parse_ip_target(address, ai.address);
+    ai.port = 1;
+    ai.transport = IPPROTO_TCP;
+    return ai;
   }
 
   TestCallListStore _store;
   MockCassandraClient _client;
+  MockCassandraResolver _resolver;
+  FakeBaseAddrIterator* _iter;
 };
 
 //

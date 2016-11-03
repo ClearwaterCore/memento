@@ -3,8 +3,11 @@
 *.substvars
 /changelog
 /files
+/memento/
 /memento-dbg/
+/memento-node/
+/memento-node-dbg/
 /memento-libs/
 /memento-libs-dbg/
 /memento-nginx/
-/memento/
+/memento-cassandra/

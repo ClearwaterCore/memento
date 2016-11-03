@@ -9,9 +9,22 @@ Build-Depends: debhelper (>= 8.0.0)
 Standards-Version: 3.9.2
 Homepage: http://projectclearwater.org/
 
+Package: memento-node
+Architecture: any
+Depends: memento-nginx, memento-as, clearwater-memcached, memento-cassandra
+Suggests: memento-node-dbg
+Description: memento-node
+
+Package: memento-node-dbg
+Architecture: any
+Section: debug
+Priority: extra
+Depends: memento-node (= ${binary:Version}), memento-libs-dbg (= ${binary:Version}), gdb
+Description: Debugging symbols for memento-node
+
 Package: memento
 Architecture: any
-Depends: clearwater-infrastructure, clearwater-tcp-scalability, clearwater-log-cleanup, memento-libs, libzmq3, clearwater-memcached, clearwater-cassandra
+Depends: clearwater-infrastructure, clearwater-tcp-scalability, clearwater-log-cleanup, memento-libs, libzmq3, clearwater-monit
 Suggests: memento-dbg
 Description: memento
 
@@ -37,4 +50,9 @@ Description: Debugging symbols for memento's libraries
 Package: memento-nginx
 Architecture: any
 Depends: clearwater-infrastructure, clearwater-nginx, memento
-Description: Integrates Memento with nginx
+Description: Integrates memento with nginx
+
+Package: memento-cassandra
+Architecture: any
+Depends: clearwater-cassandra, clearwater-infrastructure
+Description: Commissions a Cassandra node so that it can be used as a backend for a memento package

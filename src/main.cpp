@@ -213,6 +213,10 @@ int init_logging_options(int argc, char**argv, struct options& options)
       options.log_level = atoi(optarg);
       break;
 
+    case DAEMON:
+      options.daemon = true;
+      break;
+
     default:
       // Ignore other options at this point
       break;
@@ -385,12 +389,9 @@ int init_options(int argc, char**argv, struct options& options)
       options.pidfile = std::string(optarg);
       break;
 
-    case DAEMON:
-      options.daemon = true;
-      break;
-
     case LOG_FILE:
     case LOG_LEVEL:
+    case DAEMON:
       // Ignore these options - they're handled by init_logging_options
       break;
 
@@ -475,23 +476,12 @@ int main(int argc, char**argv)
     return 1;
   }
 
-  Log::setLoggingLevel(options.log_level);
-
-  if ((options.log_to_file) && (options.log_directory != ""))
-  {
-    // Work out the program name from argv[0], stripping anything before the final slash.
-    char* prog_name = argv[0];
-    char* slash_ptr = rindex(argv[0], '/');
-
-    if (slash_ptr != NULL)
-    {
-      prog_name = slash_ptr + 1;
-    }
-
-    Log::setLogger(new Logger(options.log_directory, prog_name));
-  }
-
-  TRC_STATUS("Log level set to %d", options.log_level);
+  Utils::daemon_log_setup(argc,
+                          argv,
+                          options.daemon,
+                          options.log_directory,
+                          options.log_level,
+                          options.log_to_file);
 
   std::stringstream options_ss;
 
@@ -508,18 +498,6 @@ int main(int argc, char**argv)
   if (init_options(argc, argv, options) != 0)
   {
     return 1;
-  }
-
-  if (options.daemon)
-  {
-    // Options parsed and validated, time to demonize before writing out our
-    // pidfile or spwaning threads.
-    int errnum = Utils::daemonize();
-    if (errnum != 0)
-    {
-      TRC_ERROR("Failed to convert to daemon, %d (%s)", errnum, strerror(errnum));
-      exit(0);
-    }
   }
 
   if (options.pidfile != "")
@@ -566,19 +544,29 @@ int main(int argc, char**argv)
 
   // Create alarm and communication monitor objects for the conditions
   // reported by memento.
-  CommunicationMonitor* mc_comm_monitor = new CommunicationMonitor(new Alarm("memento", AlarmDef::MEMENTO_MEMCACHED_COMM_ERROR, AlarmDef::CRITICAL),
+  AlarmManager* alarm_manager = new AlarmManager();
+  CommunicationMonitor* mc_comm_monitor = new CommunicationMonitor(new Alarm(alarm_manager,
+                                                                             "memento",
+                                                                             AlarmDef::MEMENTO_MEMCACHED_COMM_ERROR,
+                                                                             AlarmDef::CRITICAL),
                                                                    "Memento",
                                                                    "Memcached");
-  Alarm* mc_vbucket_alarm = new Alarm("memento", AlarmDef::MEMENTO_MEMCACHED_VBUCKET_ERROR, AlarmDef::MAJOR);
-  CommunicationMonitor* hs_comm_monitor = new CommunicationMonitor(new Alarm("memento", AlarmDef::MEMENTO_HOMESTEAD_COMM_ERROR, AlarmDef::CRITICAL),
+  Alarm* mc_vbucket_alarm = new Alarm(alarm_manager,
+                                      "memento",
+                                      AlarmDef::MEMENTO_MEMCACHED_VBUCKET_ERROR,
+                                      AlarmDef::MAJOR);
+  CommunicationMonitor* hs_comm_monitor = new CommunicationMonitor(new Alarm(alarm_manager,
+                                                                             "memento",
+                                                                             AlarmDef::MEMENTO_HOMESTEAD_COMM_ERROR,
+                                                                             AlarmDef::CRITICAL),
                                                                    "Memento",
                                                                    "Homestead");
-  CommunicationMonitor* cass_comm_monitor = new CommunicationMonitor(new Alarm("memento", AlarmDef::MEMENTO_CASSANDRA_COMM_ERROR, AlarmDef::CRITICAL),
+  CommunicationMonitor* cass_comm_monitor = new CommunicationMonitor(new Alarm(alarm_manager,
+                                                                               "memento",
+                                                                               AlarmDef::MEMENTO_CASSANDRA_COMM_ERROR,
+                                                                               AlarmDef::CRITICAL),
                                                                      "Memento",
                                                                      "Cassandra");
-
-  TRC_DEBUG("Starting alarm request agent");
-  AlarmReqAgent::get_instance().start();
 
   MemcachedStore* m_store = new MemcachedStore(true,
                                                "./cluster_settings",
@@ -630,9 +618,15 @@ int main(int argc, char**argv)
                                                                 load_monitor,
                                                                 hs_comm_monitor);
 
+  // Default to a 30s blacklist/graylist duration and port 9160
+  CassandraResolver* cass_resolver = new CassandraResolver(dns_resolver,
+                                                           af,
+                                                           30,
+                                                           30,
+                                                           9160);
   // Create and start the call list store.
   CallListStore::Store* call_list_store = new CallListStore::Store();
-  call_list_store->configure_connection("localhost", 9160, cass_comm_monitor);
+  call_list_store->configure_connection("localhost", 9160, cass_comm_monitor, cass_resolver);
 
   // Test Cassandra connectivity.
   CassandraStore::ResultCode store_rc = call_list_store->connection_test();
@@ -649,8 +643,12 @@ int main(int argc, char**argv)
     exit(3);
   }
 
-  HttpStack* http_stack = HttpStack::get_instance();
   HttpStackUtils::SimpleStatsManager stats_manager(stats_aggregator);
+  HttpStack* http_stack = new HttpStack(options.http_threads,
+                                        exception_handler,
+                                        access_logger,
+                                        load_monitor,
+                                        &stats_manager);
 
   CallListTask::Config call_list_config(auth_store, homestead_conn, call_list_store, options.home_domain, stats_aggregator, hc, options.api_key);
 
@@ -662,13 +660,8 @@ int main(int argc, char**argv)
   try
   {
     http_stack->initialize();
-    http_stack->configure(options.http_address,
-                          options.http_port,
-                          options.http_threads,
-                          exception_handler,
-                          access_logger,
-                          load_monitor,
-                          &stats_manager);
+    http_stack->bind_tcp_socket(options.http_address,
+                                options.http_port);
     http_stack->register_handler("^/ping$", &ping_handler);
     http_stack->register_handler("^/org.projectclearwater.call-list/users/[^/]*/call-list.xml$",
                                     pool.wrap(&call_list_handler));
@@ -702,6 +695,7 @@ int main(int argc, char**argv)
   delete homestead_conn; homestead_conn = NULL;
   delete call_list_store; call_list_store = NULL;
   delete http_resolver; http_resolver = NULL;
+  delete cass_resolver; cass_resolver = NULL;
   delete dns_resolver; dns_resolver = NULL;
   delete load_monitor; load_monitor = NULL;
   delete auth_store; auth_store = NULL;
@@ -709,15 +703,13 @@ int main(int argc, char**argv)
   delete m_store; m_store = NULL;
   delete exception_handler; exception_handler = NULL;
   delete hc; hc = NULL;
-
-
-  // Stop the alarm request agent
-  AlarmReqAgent::get_instance().stop();
+  delete http_stack; http_stack = NULL;
 
   delete mc_comm_monitor; mc_comm_monitor = NULL;
   delete mc_vbucket_alarm; mc_vbucket_alarm = NULL;
   delete hs_comm_monitor; hs_comm_monitor = NULL;
   delete cass_comm_monitor; cass_comm_monitor = NULL;
+  delete alarm_manager; alarm_manager = NULL;
 
   SAS::term();
 
